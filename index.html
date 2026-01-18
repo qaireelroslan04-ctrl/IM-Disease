@@ -353,7 +353,7 @@
         let isEditMode = false;
         let quill = null;
         
-        // Listeners Management (Crucial for Fix)
+        // Listeners
         let diseaseUnsub = null; 
         let chapterUnsub = null;
 
@@ -404,7 +404,7 @@
             renderHomeModules();
         });
 
-        // --- HOME SCREEN DYNAMICS ---
+        // --- HOME SCREEN ---
         const qMod = query(collection(db, "app_modules"), orderBy("order"));
         onSnapshot(qMod, (snap) => {
             modules = [];
@@ -432,7 +432,7 @@
         }
 
         els.btnAddModule.addEventListener('click', async () => {
-            const title = prompt("Section Title:");
+            const title = prompt("Section Title (e.g. Pediatrics):");
             if(!title) return;
             const subtitle = prompt("Subtitle:") || "";
             const icon = prompt("Icon Emoji:") || "📁";
@@ -449,7 +449,6 @@
         // --- NAVIGATION ---
         window.goHome = () => {
             appMode = null;
-            // Clean up listeners when leaving app mode
             if (diseaseUnsub) { diseaseUnsub(); diseaseUnsub = null; }
             if (chapterUnsub) { chapterUnsub(); chapterUnsub = null; }
             
@@ -464,8 +463,12 @@
             els.appView.style.display = 'flex';
             els.modeBadge.innerText = modeTitle.toUpperCase();
             els.modeBadge.style.display = "inline-block";
+            
+            // RESET UI
             els.welcomeState.style.display = 'flex';
-            els.caseDetails.style.display = 'none';
+            els.caseDetails.style.display = 'none'; 
+            els.caseDetails.classList.remove('active');
+            
             loadDiseases();
         }
 
@@ -477,21 +480,16 @@
         }
 
         function loadDiseases() {
-            if (diseaseUnsub) diseaseUnsub(); // Stop old listener
+            if (diseaseUnsub) diseaseUnsub();
             diseases = [];
             renderSidebar();
 
+            // Only load diseases for the current appMode (Module ID)
             const q = query(collection(db, "diseases"), where("moduleId", "==", appMode), orderBy("name"));
             diseaseUnsub = onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
                 renderSidebar();
-                
-                // If current disease was deleted, close view
-                if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
-                    els.welcomeState.style.display = 'flex';
-                    els.caseDetails.style.display = 'none';
-                }
             });
         }
 
@@ -519,30 +517,37 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => renderSidebar(e.target.value));
 
-        // --- CORE LOGIC (Fixed) ---
+        // --- CORE LOGIC ---
         window.selectDisease = (id, manualData = null) => {
             currentDiseaseId = id;
+            
+            // Priority: Manual Data > Array Find
             const data = manualData || diseases.find(d => d.id === id);
-            if (!data) return;
+            
+            // FIX: Prevent Crash if data is missing
+            if (!data) {
+                console.log("Loading disease data..."); 
+                return;
+            }
 
-            // Stop previous chapter listener to prevent conflict
             if (chapterUnsub) chapterUnsub();
 
+            // FIX: Force content to be visible
             els.welcomeState.style.display = 'none';
-            els.caseDetails.classList.add('active');
+            els.caseDetails.style.display = 'block'; 
+            requestAnimationFrame(() => els.caseDetails.classList.add('active'));
+
             els.caseTitle.innerText = data.name;
             els.categoryTag.innerText = data.category;
             els.editNameInput.value = data.name;
             els.editCatInput.value = data.category;
             
-            // Clear content
             els.tabsContainer.innerHTML = "";
             els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey; text-align:center'>Loading content...</div>";
             
             renderSidebar(document.getElementById('searchInput').value);
             if(window.innerWidth <= 768) window.toggleSidebar(false);
 
-            // New Chapter Listener
             const qChap = query(collection(db, "diseases", id, "chapters"), orderBy("order"));
             chapterUnsub = onSnapshot(qChap, (snap) => {
                 chapters = [];
@@ -559,7 +564,6 @@
                 return;
             }
 
-            // Ensure a chapter is selected. If current is invalid, pick first.
             if (!currentChapterId || !chapters.find(c => c.id === currentChapterId)) {
                 currentChapterId = chapters[0].id;
             }
@@ -568,7 +572,6 @@
                 const btn = document.createElement('button');
                 btn.className = `tab-btn ${chap.id === currentChapterId ? 'active' : ''}`;
                 
-                // Icon logic
                 let icon = "📄";
                 const t = chap.title.toLowerCase();
                 if(t.includes('history') || t.includes('def')) icon = "📜";
@@ -588,13 +591,12 @@
         }
 
         function renderContent() {
-            // If editing, don't overwrite
             if(isEditMode && document.getElementById('editorContainer').style.display === 'block') return;
             
             const chap = chapters.find(c => c.id === currentChapterId);
             if(chap) {
                 if(isEditMode) {
-                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem; text-align:center; border:1px dashed var(--border-color); padding:5px; border-radius:6px;">Tap to edit</div>` + chap.content;
+                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem; text-align:center; border:1px dashed var(--border-color); padding:5px; border-radius:6px;">Tap here to edit content</div>` + chap.content;
                    els.viewContainer.style.cursor = "pointer";
                    els.viewContainer.onclick = () => openEditor();
                 } else {
@@ -619,7 +621,7 @@
             if(currentChapterId) renderContent();
         }
 
-        // Add Disease
+        // ADD DISEASE (FIXED)
         els.btnAddDisease.onclick = async () => {
             if(!appMode) { alert("Select a section first."); return; }
             const name = prompt("New Disease Name:");
@@ -632,10 +634,10 @@
                     name: name, category: cat, moduleId: appMode, createdAt: new Date()
                 });
                 
-                // 2. Manual Object for Immediate UI Update
+                // 2. Create local object
                 const newDisease = { id: docRef.id, name: name, category: cat, moduleId: appMode };
                 
-                // 3. Force Sidebar Update (Snapshot will catch up later, this prevents lag)
+                // 3. Force Sidebar Update
                 diseases.push(newDisease);
                 renderSidebar();
 
