@@ -533,13 +533,19 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => renderSidebar(e.target.value));
 
-        window.selectDisease = (id) => {
+        window.selectDisease = (id, manualData = null) => {
             currentDiseaseId = id;
-            const data = diseases.find(d => d.id === id);
             
-            // FIX: Safety check - if data is missing, stop instead of crashing
-            if (!data) return;
+            // FIX: Use manualData if provided, otherwise look it up
+            const data = manualData || diseases.find(d => d.id === id);
+            
+            // Safety check: If still missing, stop to prevent crash
+            if (!data) {
+                console.error("Disease data not found for ID:", id);
+                return;
+            }
 
+            // 1. Update UI Text
             els.welcomeState.style.display = 'none';
             els.caseDetails.classList.add('active');
             els.caseTitle.innerText = data.name;
@@ -547,9 +553,14 @@
             els.editNameInput.value = data.name;
             els.editCatInput.value = data.category;
             
+            // 2. Clear previous tabs immediately
+            els.tabsContainer.innerHTML = ""; 
+            els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey'>Loading content...</div>";
+            
             renderSidebar(document.getElementById('searchInput').value);
             if(window.innerWidth <= 768) window.toggleSidebar(false);
 
+            // 3. Load Chapters
             const qChap = query(collection(db, "diseases", id, "chapters"), orderBy("order"));
             onSnapshot(qChap, (snap) => {
                 chapters = [];
@@ -638,7 +649,7 @@
             const cat = prompt("Category (e.g. Respiratory):") || "General";
             
             try {
-                // 1. Add Doc to Database
+                // 1. Add to Database
                 const docRef = await addDoc(collection(db, "diseases"), {
                     name: name,
                     category: cat,
@@ -646,19 +657,23 @@
                     createdAt: new Date()
                 });
                 
-                // FIX: Manually add to local list immediately so the app doesn't crash
-                // This bridges the gap before the database listener updates
-                diseases.push({ id: docRef.id, name: name, category: cat, moduleId: appMode });
-
-                // 2. Auto-Select the new disease
-                selectDisease(docRef.id);
+                // 2. Create local object
+                const newDisease = { id: docRef.id, name: name, category: cat, moduleId: appMode };
                 
-                // 3. Prompt for first chapter immediately
+                // 3. Update local list and Sidebar immediately
+                diseases.push(newDisease);
+                renderSidebar();
+
+                // 4. Open it DIRECTLY (Passing newDisease avoids the lookup crash)
+                selectDisease(docRef.id, newDisease);
+                
+                // 5. Prompt for chapter
                 if(confirm(`Created '${name}'. Add first chapter now?`)) {
                     await addNewChapter();
                 }
             } catch(e) {
                 alert("Error adding disease: " + e.message);
+                console.error(e);
             }
         };
         
