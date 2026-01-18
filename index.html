@@ -306,28 +306,18 @@
             <div id="home-view">
                 <h2 class="home-title">IM Disease</h2>
                 <div class="menu-list">
-                    <div class="menu-item" onclick="startApp('long')">
-                        <div class="menu-text">
-                            <span class="menu-label">Long Case</span>
-                            <span class="menu-sub">Detailed clerking & management</span>
-                        </div>
-                        <div class="menu-icon">📖</div>
                     </div>
-                    <div class="menu-item" onclick="startApp('short')">
-                        <div class="menu-text">
-                            <span class="menu-label">Short Case</span>
-                            <span class="menu-sub">Examination & rapid diagnosis</span>
-                        </div>
-                        <div class="menu-icon">⚡</div>
-                    </div>
-                    <div class="menu-item" onclick="startApp('general')">
-                        <div class="menu-text">
-                            <span class="menu-label">General Notes</span>
-                            <span class="menu-sub">Pathology & Theory</span>
-                        </div>
-                        <div class="menu-icon">📚</div>
-                    </div>
-                </div>
+            </div>
+            
+            <div id="app-view">
+                <div class="backdrop" ...></div>
+                
+                <aside id="sidebar"> ... </aside>
+            
+                <main>
+                    <div id="welcomeState" ...> ... </div>
+                    <div id="caseDetails" ...> ... </div>
+                </main>
             </div>
 
             <div id="caseDetails" class="case-details">
