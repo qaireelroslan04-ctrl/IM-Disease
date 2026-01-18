@@ -355,7 +355,8 @@
         let modules = []; // Dynamic Home Tabs
         let isEditMode = false;
         let quill = null;
-
+        let diseaseUnsub = null; // To stop the database listener
+        
         const els = {
             homeView: document.getElementById('home-view'),
             appView: document.getElementById('app-view'),
@@ -497,14 +498,31 @@
             document.getElementById('backdrop').classList.toggle('open', shouldOpen);
         }
 
-        // --- DATA LOADING & RENDER ---
         function loadDiseases() {
-            // Filter by the module ID (appMode)
+            // FIX: Stop the previous listener if it exists
+            if (diseaseUnsub) {
+                diseaseUnsub();
+                diseaseUnsub = null;
+            }
+
+            // Clear the current list so old data doesn't stick around
+            diseases = [];
+            renderSidebar();
+
+            // Subscribe to the new mode
             const q = query(collection(db, "diseases"), where("moduleId", "==", appMode), orderBy("name"));
-            onSnapshot(q, (snap) => {
+            
+            // Store the new listener in the variable
+            diseaseUnsub = onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
                 renderSidebar();
+                
+                // If we are currently viewing a disease that was just deleted/hidden, close it
+                if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
+                    els.welcomeState.style.display = 'flex';
+                    els.caseDetails.style.display = 'none';
+                }
             });
         }
 
@@ -533,19 +551,16 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => renderSidebar(e.target.value));
 
+        // UPDATED selectDisease to accept manual data
         window.selectDisease = (id, manualData = null) => {
             currentDiseaseId = id;
             
-            // FIX: Use manualData if provided, otherwise look it up
+            // FIX: Use manualData if provided, otherwise find it in the list
             const data = manualData || diseases.find(d => d.id === id);
             
-            // Safety check: If still missing, stop to prevent crash
-            if (!data) {
-                console.error("Disease data not found for ID:", id);
-                return;
-            }
+            if (!data) return; // Safety check
 
-            // 1. Update UI Text
+            // Update UI
             els.welcomeState.style.display = 'none';
             els.caseDetails.classList.add('active');
             els.caseTitle.innerText = data.name;
@@ -553,14 +568,14 @@
             els.editNameInput.value = data.name;
             els.editCatInput.value = data.category;
             
-            // 2. Clear previous tabs immediately
-            els.tabsContainer.innerHTML = ""; 
-            els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey'>Loading content...</div>";
+            // Clear previous content immediately
+            els.tabsContainer.innerHTML = "";
+            els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey; text-align:center'>Loading content...</div>";
             
             renderSidebar(document.getElementById('searchInput').value);
             if(window.innerWidth <= 768) window.toggleSidebar(false);
 
-            // 3. Load Chapters
+            // Load Chapters
             const qChap = query(collection(db, "diseases", id, "chapters"), orderBy("order"));
             onSnapshot(qChap, (snap) => {
                 chapters = [];
@@ -638,7 +653,7 @@
             if(currentChapterId) renderContent();
         }
 
-        // ADD DISEASE (FIXED)
+        // UPDATED Add Disease Button
         els.btnAddDisease.onclick = async () => {
             if(!appMode) {
                 alert("Please select a section from the Home screen first.");
@@ -657,17 +672,22 @@
                     createdAt: new Date()
                 });
                 
-                // 2. Create local object
-                const newDisease = { id: docRef.id, name: name, category: cat, moduleId: appMode };
+                // 2. FIX: Manually create the object immediately
+                const newDisease = { 
+                    id: docRef.id, 
+                    name: name, 
+                    category: cat, 
+                    moduleId: appMode 
+                };
                 
-                // 3. Update local list and Sidebar immediately
+                // 3. Add to local array and Sidebar
                 diseases.push(newDisease);
                 renderSidebar();
 
-                // 4. Open it DIRECTLY (Passing newDisease avoids the lookup crash)
+                // 4. Open it DIRECTLY using the manual object
                 selectDisease(docRef.id, newDisease);
                 
-                // 5. Prompt for chapter
+                // 5. Ask to add chapter
                 if(confirm(`Created '${name}'. Add first chapter now?`)) {
                     await addNewChapter();
                 }
