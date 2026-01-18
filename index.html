@@ -537,6 +537,9 @@
             currentDiseaseId = id;
             const data = diseases.find(d => d.id === id);
             
+            // FIX: Safety check - if data is missing, stop instead of crashing
+            if (!data) return;
+
             els.welcomeState.style.display = 'none';
             els.caseDetails.classList.add('active');
             els.caseTitle.innerText = data.name;
@@ -635,16 +638,20 @@
             const cat = prompt("Category (e.g. Respiratory):") || "General";
             
             try {
-                // 1. Add Doc
+                // 1. Add Doc to Database
                 const docRef = await addDoc(collection(db, "diseases"), {
                     name: name,
                     category: cat,
-                    moduleId: appMode, // Link to current module
+                    moduleId: appMode,
                     createdAt: new Date()
                 });
                 
+                // FIX: Manually add to local list immediately so the app doesn't crash
+                // This bridges the gap before the database listener updates
+                diseases.push({ id: docRef.id, name: name, category: cat, moduleId: appMode });
+
                 // 2. Auto-Select the new disease
-                await selectDisease(docRef.id);
+                selectDisease(docRef.id);
                 
                 // 3. Prompt for first chapter immediately
                 if(confirm(`Created '${name}'. Add first chapter now?`)) {
@@ -654,7 +661,7 @@
                 alert("Error adding disease: " + e.message);
             }
         };
-
+        
         window.addNewChapter = async () => {
             if(!currentDiseaseId) {
                 alert("Select a disease first.");
