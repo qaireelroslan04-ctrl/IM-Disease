@@ -14,9 +14,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 
     <style>
-        /* --- 1. DESIGN SYSTEM (From Surgical Helper) --- */
+        /* --- 1. DESIGN SYSTEM --- */
         :root {
-            /* Colors: Dark Mode (Default) */
             --bg-body: #000000;
             --bg-sidebar: #050505;
             --bg-card: #0a0a0a;
@@ -30,8 +29,9 @@
             --accent-text: #bfdbfe;
             --header-bg: rgba(0, 0, 0, 0.85);
             --bg-tab: rgba(30, 30, 30, 0.6);
-            --shadow-card: none;
-
+            --editor-bg: #0a0a0a;
+            --editor-toolbar: #111111;
+            
             /* Colored Boxes */
             --box-green-bg: rgba(6, 78, 59, 0.3); --box-green-border: #059669; --box-green-text: #d1fae5;
             --box-blue-bg: rgba(30, 58, 138, 0.3); --box-blue-border: #2563eb; --box-blue-text: #dbeafe;
@@ -66,33 +66,47 @@
             margin-left: 10px; display: none;
         }
 
+        /* User Menu & Avatar */
+        .user-container { position: relative; display: flex; align-items: center; gap: 15px; }
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--border-color); cursor: pointer;
+            transition: border-color 0.2s; background: var(--bg-input);
+        }
+        .user-avatar:hover { border-color: var(--accent-color); }
+        
+        .user-dropdown {
+            display: none; position: absolute; top: 50px; right: 0;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 0.75rem; width: 220px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            flex-direction: column; overflow: hidden; z-index: 100;
+        }
+        .user-dropdown.visible { display: flex; animation: fadeIn 0.2s; }
+        
+        .menu-item { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; transition: background 0.2s; color: var(--text-main); }
+        .menu-item:hover { background: var(--bg-input); }
+        .menu-divider { height: 1px; background: var(--border-color); margin: 4px 0; }
+        .menu-info { padding: 12px 16px; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-box); }
+
         /* Edit Switch */
-        .edit-switch { position: relative; display: inline-block; width: 36px; height: 20px; margin-right: 8px; }
+        .edit-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
         .edit-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .4s; border-radius: 34px; border: 1px solid var(--border-color); }
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--text-muted); transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-color); border-color: var(--accent-color); }
         input:checked + .slider:before { transform: translateX(16px); background-color: white; }
-        .auth-btn { background: none; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 
         /* --- 4. HOME VIEW --- */
-        #home-view {
-            display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center;
-            gap: 2rem; padding: 2rem; animation: fadeIn 0.5s ease-out; overflow-y: auto; width: 100%; height: 100%;
-        }
-        .home-title {
-            font-size: 2.5rem; font-weight: 900; text-align: center;
-            background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
+        #home-view { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; overflow-y: auto; width: 100%; height: 100%; }
+        .home-title { font-size: 2.5rem; font-weight: 900; text-align: center; background: linear-gradient(135deg, var(--accent-color), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .menu-list { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 400px; }
-        .menu-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 1.2rem 1.5rem; background: var(--bg-card);
-            border: 1px solid var(--border-color); border-radius: 0.75rem;
+        .menu-item-home {
+            display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.5rem;
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem;
             cursor: pointer; transition: all 0.2s ease; position: relative;
         }
-        .menu-item:hover { border-color: var(--accent-color); transform: translateX(5px); background: var(--bg-input); }
+        .menu-item-home:hover { border-color: var(--accent-color); transform: translateX(5px); background: var(--bg-input); }
         .menu-text { display: flex; flex-direction: column; }
         .menu-label { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
@@ -101,23 +115,12 @@
         /* --- 5. APP VIEW --- */
         #app-view { display: none; flex: 1; overflow: hidden; position: relative; min-height: 0; }
         
-        aside {
-            width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color);
-            display: flex; flex-direction: column; overflow-y: auto; z-index: 40;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        aside { width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow-y: auto; z-index: 40; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .search-box { padding: 1rem; background: var(--bg-sidebar); position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--border-color); }
         .search-input { width: 100%; padding: 0.85rem; background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; outline: none; }
         
-        .category-header {
-            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
-            color: var(--text-muted); font-weight: 800; padding: 1.5rem 0.75rem 0.5rem;
-            border-bottom: 1px solid var(--border-color); opacity: 0.8;
-        }
-        .case-btn {
-            width: 100%; text-align: left; padding: 1rem 0.75rem; background: none; border: none; cursor: pointer;
-            color: var(--text-main); font-weight: 500; font-size: 0.95rem; border-radius: 0.5rem; margin-bottom: 2px;
-        }
+        .category-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 800; padding: 1.5rem 0.75rem 0.5rem; border-bottom: 1px solid var(--border-color); opacity: 0.8; }
+        .case-btn { width: 100%; text-align: left; padding: 1rem 0.75rem; background: none; border: none; cursor: pointer; color: var(--text-main); font-weight: 500; font-size: 0.95rem; border-radius: 0.5rem; margin-bottom: 2px; }
         .case-btn.active { background-color: var(--accent-bg); color: var(--accent-text); font-weight: 700; border-left: 3px solid var(--accent-color); }
 
         main { flex: 1; overflow-y: auto; padding: 0 2rem; background-color: var(--bg-body); position: relative; }
@@ -131,28 +134,15 @@
         h2 { font-size: 2rem; color: var(--text-main); font-weight: 800; line-height: 1.2; margin: 0; }
         
         /* --- 6. TABS & CONTENT --- */
-        .tabs-wrapper {
-            position: sticky; top: 0; z-index: 10; padding: 0.75rem 0;
-            background-color: var(--bg-body); border-bottom: 1px solid var(--border-color);
-            margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem;
-            display: flex; gap: 10px; align-items: center;
-        }
+        .tabs-wrapper { position: sticky; top: 0; z-index: 10; padding: 0.75rem 0; background-color: var(--bg-body); border-bottom: 1px solid var(--border-color); margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem; display: flex; gap: 10px; align-items: center; }
         .tabs { display: flex; overflow-x: auto; gap: 0.75rem; scrollbar-width: none; flex: 1; }
         .tabs::-webkit-scrollbar { display: none; }
         
-        .tab-btn {
-            flex: 0 0 auto; padding: 0.65rem 1.2rem; border: 1px solid var(--border-color); background: var(--bg-tab);
-            cursor: pointer; border-radius: 2rem; font-weight: 600; color: var(--text-muted); font-size: 0.9rem;
-            white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
-        }
+        .tab-btn { flex: 0 0 auto; padding: 0.65rem 1.2rem; border: 1px solid var(--border-color); background: var(--bg-tab); cursor: pointer; border-radius: 2rem; font-weight: 600; color: var(--text-muted); font-size: 0.9rem; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
         .tab-btn.active { background: var(--bg-card); color: var(--text-main); border-color: var(--accent-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
-        .content-card {
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 1rem; padding: 2.5rem; min-height: 500px; position: relative;
-        }
+        .content-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2.5rem; min-height: 500px; position: relative; }
         
-        /* Content Styling (Restored from Old App) */
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         .tab-content h3 { font-size: 1.35rem; color: var(--text-main); margin: 2rem 0 1rem; border-left: 4px solid var(--accent-color); padding-left: 1rem; }
@@ -166,27 +156,35 @@
         .box-red { background: var(--box-red-bg); border-color: var(--box-red-border); color: var(--box-red-text); }
         .box-purple { background: var(--box-purple-bg); border-color: var(--box-purple-border); color: var(--box-purple-text); }
         .box-yellow { background: var(--box-yellow-bg); border-color: var(--box-yellow-border); color: var(--box-yellow-text); }
-        
         .pearl-box { background-color: var(--bg-box); border: 1px solid var(--box-purple-border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
         .pearl-title { color: var(--box-purple-text); font-weight: 800; margin-bottom: 0.5rem; }
 
-        /* --- 7. EDITOR STYLING (Minimalist) --- */
-        #editorContainer { margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        /* --- 7. ENHANCED EDITOR --- */
+        #editorWrapper { margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        
         .ql-toolbar { 
             border: none !important; border-bottom: 1px solid var(--border-color) !important; 
             background: transparent !important;
             padding: 8px 0 !important;
             white-space: nowrap; overflow-x: auto;
-            display: flex; gap: 5px;
+            display: flex; gap: 8px; align-items: center;
         }
-        .ql-toolbar::-webkit-scrollbar { height: 4px; }
-        .ql-toolbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        /* Scrollbar for toolbar */
+        .ql-toolbar::-webkit-scrollbar { height: 2px; }
+        .ql-toolbar::-webkit-scrollbar-thumb { background: var(--accent-color); }
+        
         .ql-container { border: none !important; font-family: inherit !important; font-size: 1.05rem !important; }
         .ql-editor { padding: 1rem 0 !important; color: var(--text-main); line-height: 1.8; min-height: 300px; }
-        .ql-stroke { stroke: var(--text-muted) !important; } .ql-fill { fill: var(--text-muted) !important; } .ql-picker { color: var(--text-muted) !important; }
-        .ql-active .ql-stroke { stroke: var(--accent-color) !important; } .ql-active .ql-fill { fill: var(--accent-color) !important; }
+        
+        /* Toolbar Icons Dark Mode */
+        .ql-stroke { stroke: var(--text-muted) !important; } 
+        .ql-fill { fill: var(--text-muted) !important; } 
+        .ql-picker { color: var(--text-muted) !important; }
+        .ql-picker-options { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+        .ql-active .ql-stroke { stroke: var(--accent-color) !important; } 
+        .ql-active .ql-fill { fill: var(--accent-color) !important; }
 
-        /* Admin UI Elements (Hidden by default via CSS) */
+        /* Admin Elements */
         body:not(.edit-mode) .admin-only { display: none !important; }
         
         .add-btn-sidebar { width: 100%; margin-top: 0.8rem; padding: 0.6rem; background: var(--accent-bg); color: var(--accent-text); border: 1px solid var(--accent-color); border-radius: 0.5rem; cursor: pointer; font-weight: 700; }
@@ -199,7 +197,7 @@
         .save-btn { background: var(--accent-color); color: white; border: none; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; }
         .cancel-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; }
 
-        /* Context Menu Modal */
+        /* Modal */
         .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 1rem; width: 90%; max-width: 400px; }
         .modal-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; }
@@ -228,15 +226,26 @@
             <h1 class="app-title" onclick="goHome()">IM Disease <span id="modeBadge" class="mode-badge">MODE</span></h1>
         </div>
 
-        <div style="display: flex; align-items: center;">
-            <div id="adminControls" style="display: none; align-items: center; margin-right: 15px;">
+        <div class="user-container">
+            <div id="adminControls" class="admin-only" style="display:flex; align-items:center; margin-right:10px">
                 <label class="edit-switch">
                     <input type="checkbox" id="editModeToggle">
                     <span class="slider"></span>
                 </label>
-                <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">EDIT</span>
+                <span style="font-size:0.65rem; font-weight:700; color:var(--text-muted); margin-left:6px;">EDIT</span>
             </div>
-            <button id="authBtn" class="auth-btn">Log In</button>
+
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=171717&color=e2e8f0" class="user-avatar" onclick="toggleUserMenu()">
+            
+            <div id="userMenu" class="user-dropdown">
+                <div class="menu-item" onclick="importFile()">📂 Import File (Beta)</div>
+                <div class="menu-item" onclick="handleAuth()" id="menuAuthText">Log In</div>
+                <div class="menu-divider"></div>
+                <div class="menu-info">
+                    <div style="font-weight:700; margin-bottom:4px;">Admin Support</div>
+                    <div>WhatsApp: <a href="https://wa.me/60138868505" target="_blank" style="color:var(--accent-color); text-decoration:none;">013 886 8505</a></div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -316,7 +325,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // CONFIG (Replace with your actual config)
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBd9E9VkE7bllIN13NYGz801F4Jue_VzVk",
             authDomain: "im-helper-d3a4a.firebaseapp.com",
@@ -364,32 +373,54 @@
             btnAddDisease: document.getElementById('btnAddDisease'),
             btnAddTab: document.getElementById('btnAddTab'),
             btnAddModule: document.getElementById('btnAddModule'),
-            authBtn: document.getElementById('authBtn'),
+            userMenu: document.getElementById('userMenu'),
+            userAvatar: document.getElementById('userAvatar'),
+            menuAuthText: document.getElementById('menuAuthText'),
             metaModal: document.getElementById('metaModal'),
             modalName: document.getElementById('modalName'),
             modalCat: document.getElementById('modalCat'),
             detailsHeader: document.getElementById('detailsHeader')
         };
 
-        // AUTH
-        els.authBtn.addEventListener('click', () => {
-            if (auth.currentUser) signOut(auth).then(() => location.reload());
-            else signInWithPopup(auth, provider).catch(e => alert(e.message));
+        // --- AUTH & USER MENU ---
+        window.toggleUserMenu = () => {
+            els.userMenu.classList.toggle('visible');
+        }
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!els.userMenu.contains(e.target) && !els.userAvatar.contains(e.target)) {
+                els.userMenu.classList.remove('visible');
+            }
         });
 
+        window.handleAuth = () => {
+            if (auth.currentUser) signOut(auth).then(() => location.reload());
+            else signInWithPopup(auth, provider).catch(e => alert(e.message));
+        }
+
         onAuthStateChanged(auth, (user) => {
-            if (user && user.email === ADMIN_EMAIL) {
-                els.authBtn.innerText = "Log Out";
-                els.adminControls.style.display = "flex";
+            if (user) {
+                els.userAvatar.src = user.photoURL || "https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff";
+                els.menuAuthText.innerText = "Log Out";
+                
+                if (user.email === ADMIN_EMAIL) {
+                    els.adminControls.style.display = "flex";
+                }
             } else {
-                els.authBtn.innerText = user ? "Log Out" : "Log In";
+                els.userAvatar.src = "https://ui-avatars.com/api/?name=User&background=171717&color=e2e8f0";
+                els.menuAuthText.innerText = "Log In";
                 els.adminControls.style.display = "none";
                 setEditMode(false);
             }
             renderHomeModules();
         });
 
-        // HOME MODULES
+        window.importFile = () => {
+            alert("Import Feature: This allows you to upload JSON/Backup files. (Coming Soon)");
+        }
+
+        // --- HOME MODULES ---
         const qMod = query(collection(db, "app_modules"), orderBy("order"));
         onSnapshot(qMod, (snap) => {
             modules = [];
@@ -401,7 +432,7 @@
             els.homeMenuList.innerHTML = "";
             modules.forEach(mod => {
                 const item = document.createElement('div');
-                item.className = 'menu-item';
+                item.className = 'menu-item-home';
                 let delBtn = isEditMode ? `<button class="delete-mod-btn admin-only" onclick="deleteModule('${mod.id}', event)">×</button>` : "";
                 item.innerHTML = `
                     <div class="menu-text"><span class="menu-label">${mod.title}</span><span class="menu-sub">${mod.subtitle}</span></div>
@@ -426,7 +457,7 @@
             if(confirm("Delete section?")) await deleteDoc(doc(db, "app_modules", id));
         };
 
-        // NAVIGATION
+        // --- NAVIGATION ---
         window.goHome = () => {
             appMode = null;
             if (diseaseUnsub) { diseaseUnsub(); diseaseUnsub = null; }
@@ -453,7 +484,7 @@
             document.getElementById('backdrop').classList.toggle('open', force !== undefined ? force : !open);
         }
 
-        // LOAD DISEASES (Fixed duplicate issue by removing ordering)
+        // --- DISEASES ---
         function loadDiseases() {
             if (diseaseUnsub) diseaseUnsub();
             diseases = [];
@@ -466,7 +497,6 @@
                 diseases.sort((a,b) => a.name.localeCompare(b.name));
                 renderSidebar();
                 
-                // If viewing a deleted disease, close it
                 if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
                     els.welcomeState.style.display = 'flex';
                     els.caseDetails.style.display = 'none';
@@ -497,7 +527,7 @@
         }
         document.getElementById('searchInput').addEventListener('input', (e) => renderSidebar(e.target.value));
 
-        // SELECT DISEASE
+        // --- CONTENT LOGIC ---
         window.selectDisease = (id) => {
             currentDiseaseId = id;
             const data = diseases.find(d => d.id === id);
@@ -514,7 +544,7 @@
             
             els.tabsContainer.innerHTML = "";
             els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey; text-align:center'>Loading content...</div>";
-            cancelEdit(); // Ensure editor is closed
+            cancelEdit(); 
 
             renderSidebar(document.getElementById('searchInput').value);
             if(window.innerWidth <= 768) window.toggleSidebar(false);
@@ -560,33 +590,29 @@
             }
         }
 
-        // --- EDITING LOGIC ---
-        // 1. Toggle Mode
+        // --- EDITING ---
         els.editModeToggle.addEventListener('change', (e) => setEditMode(e.target.checked));
         function setEditMode(active) {
             isEditMode = active;
             if(active) document.body.classList.add('edit-mode');
             else document.body.classList.remove('edit-mode');
             
-            if(!appMode) renderHomeModules(); // Update delete buttons
+            if(!appMode) renderHomeModules(); 
             if(!active) cancelEdit();
             if(currentChapterId) renderContent();
         }
 
-        // 2. Add Disease (Wait for DB)
         els.btnAddDisease.onclick = async () => {
             if(!appMode) { alert("Select a section first."); return; }
             const name = prompt("Name:");
             if(!name) return;
             const cat = prompt("Category:") || "General";
-            
-            // Just add to DB. The snapshot listener will update the list automatically.
             await addDoc(collection(db, "diseases"), {
                 name: name, category: cat, moduleId: appMode, createdAt: new Date()
             });
         };
 
-        // 3. Metadata Context Menu (Long Press / Right Click)
+        // Context Menu
         let pressTimer;
         els.detailsHeader.addEventListener('contextmenu', (e) => {
             if(!isEditMode) return;
@@ -627,7 +653,7 @@
             els.welcomeState.style.display = 'flex';
         };
 
-        // 4. Editor Functions
+        // Editor
         window.addNewChapter = async () => {
             if(!currentDiseaseId) return;
             const title = prompt("Tab Title:");
@@ -649,8 +675,11 @@
                     theme: 'snow',
                     modules: {
                         toolbar: [
-                            [{ 'header': [3, false] }],
+                            [{ 'header': [1, 2, 3, 4, 5, false] }],
+                            [{ 'font': [] }],
                             ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'script': 'sub'}, { 'script': 'super' }],
                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                             ['link', 'image', 'video', 'formula'],
                             ['clean']
