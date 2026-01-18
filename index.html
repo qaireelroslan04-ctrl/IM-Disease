@@ -14,8 +14,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 
     <style>
-        /* --- CSS VARIABLES --- */
+        /* --- 1. DESIGN SYSTEM (From Surgical Helper) --- */
         :root {
+            /* Colors: Dark Mode (Default) */
             --bg-body: #000000;
             --bg-sidebar: #050505;
             --bg-card: #0a0a0a;
@@ -29,78 +30,55 @@
             --accent-text: #bfdbfe;
             --header-bg: rgba(0, 0, 0, 0.85);
             --bg-tab: rgba(30, 30, 30, 0.6);
-            --editor-bg: #0a0a0a;
-            --editor-toolbar: #111111;
+            --shadow-card: none;
+
+            /* Colored Boxes */
+            --box-green-bg: rgba(6, 78, 59, 0.3); --box-green-border: #059669; --box-green-text: #d1fae5;
+            --box-blue-bg: rgba(30, 58, 138, 0.3); --box-blue-border: #2563eb; --box-blue-text: #dbeafe;
+            --box-red-bg: rgba(127, 29, 29, 0.3); --box-red-border: #dc2626; --box-red-text: #fee2e2;
+            --box-purple-bg: rgba(88, 28, 135, 0.3); --box-purple-border: #9333ea; --box-purple-text: #f3e8ff;
+            --box-yellow-bg: rgba(120, 53, 15, 0.3); --box-yellow-border: #d97706; --box-yellow-text: #fef3c7;
         }
 
-        [data-theme="light"] {
-            --bg-body: #f0f4f8;
-            --bg-sidebar: #ffffff;
-            --bg-card: #ffffff;
-            --bg-box: #f8fafc;
-            --bg-input: #f1f5f9;
-            --border-color: #e2e8f0;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --accent-color: #0284c7;
-            --accent-bg: #e0f2fe;
-            --accent-text: #0c4a6e;
-            --header-bg: rgba(255, 255, 255, 0.95);
-            --bg-tab: rgba(255, 255, 255, 0.85);
-            --editor-bg: #ffffff;
-            --editor-toolbar: #f1f5f9;
-        }
-
+        /* --- 2. BASE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            background-color: var(--bg-body); color: var(--text-main);
+            height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* HEADER */
+        /* --- 3. HEADER --- */
         header {
             background-color: var(--header-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 0 1.5rem;
-            height: 60px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 0 1.5rem; height: 60px;
+            display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-color);
-            z-index: 50;
-            flex-shrink: 0;
+            z-index: 50; flex-shrink: 0;
         }
-
         .header-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; overflow: hidden; }
-        .logo-icon { font-size: 1.2rem; cursor: pointer; flex-shrink: 0; }
-        .app-title { font-size: 1.25rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer; }
-        
+        .logo-icon { font-size: 1.2rem; cursor: pointer; }
+        .app-title { font-size: 1.25rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer;}
         .mode-badge { 
             background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color);
             font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; 
             margin-left: 10px; display: none;
         }
 
+        /* Edit Switch */
         .edit-switch { position: relative; display: inline-block; width: 36px; height: 20px; margin-right: 8px; }
         .edit-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .4s; border-radius: 34px; border: 1px solid var(--border-color); }
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: var(--text-muted); transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-color); border-color: var(--accent-color); }
         input:checked + .slider:before { transform: translateX(16px); background-color: white; }
-
         .auth-btn { background: none; border: 1px solid var(--border-color); color: var(--text-main); padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 
-        /* HOME SCREEN */
+        /* --- 4. HOME VIEW --- */
         #home-view {
             display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center;
-            gap: 3rem; padding: 2rem; animation: fadeIn 0.5s ease-out; overflow-y: auto; width: 100%; height: 100%;
+            gap: 2rem; padding: 2rem; animation: fadeIn 0.5s ease-out; overflow-y: auto; width: 100%; height: 100%;
         }
         .home-title {
             font-size: 2.5rem; font-weight: 900; text-align: center;
@@ -120,18 +98,7 @@
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
         .menu-icon { font-size: 1.5rem; opacity: 0.8; }
         
-        .add-module-btn {
-            background: var(--bg-input); border: 2px dashed var(--border-color); color: var(--text-muted);
-            width: 100%; padding: 1rem; border-radius: 0.75rem; cursor: pointer; font-weight: 600;
-            display: none;
-        }
-        .add-module-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
-        .delete-mod-btn {
-            position: absolute; right: -15px; top: -10px; background: red; color: white;
-            border-radius: 50%; width: 25px; height: 25px; border: none; cursor: pointer; display: none;
-        }
-
-        /* APP SCREEN */
+        /* --- 5. APP VIEW --- */
         #app-view { display: none; flex: 1; overflow: hidden; position: relative; min-height: 0; }
         
         aside {
@@ -139,18 +106,9 @@
             display: flex; flex-direction: column; overflow-y: auto; z-index: 40;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
         .search-box { padding: 1rem; background: var(--bg-sidebar); position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--border-color); }
         .search-input { width: 100%; padding: 0.85rem; background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; outline: none; }
-        .search-input:focus { border-color: var(--accent-color); }
-
-        .add-btn-sidebar {
-            width: 100%; margin-top: 0.8rem; padding: 0.6rem;
-            background: var(--accent-bg); color: var(--accent-text); border: 1px solid var(--accent-color);
-            border-radius: 0.5rem; cursor: pointer; font-weight: 700; font-size: 0.85rem;
-            display: none;
-        }
-
+        
         .category-header {
             font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
             color: var(--text-muted); font-weight: 800; padding: 1.5rem 0.75rem 0.5rem;
@@ -160,7 +118,6 @@
             width: 100%; text-align: left; padding: 1rem 0.75rem; background: none; border: none; cursor: pointer;
             color: var(--text-main); font-weight: 500; font-size: 0.95rem; border-radius: 0.5rem; margin-bottom: 2px;
         }
-        .case-btn:hover { background-color: var(--bg-input); }
         .case-btn.active { background-color: var(--accent-bg); color: var(--accent-text); font-weight: 700; border-left: 3px solid var(--accent-color); }
 
         main { flex: 1; overflow-y: auto; padding: 0 2rem; background-color: var(--bg-body); position: relative; }
@@ -173,10 +130,7 @@
         .category-tag { font-size: 0.8rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         h2 { font-size: 2rem; color: var(--text-main); font-weight: 800; line-height: 1.2; margin: 0; }
         
-        .header-edit-tools { display: none; gap: 10px; margin-top: 1rem; }
-        .header-input { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.5rem; border-radius: 4px; flex: 1; }
-        .danger-btn { background: rgba(127, 29, 29, 0.3); border: 1px solid #dc2626; color: #fee2e2; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-        
+        /* --- 6. TABS & CONTENT --- */
         .tabs-wrapper {
             position: sticky; top: 0; z-index: 10; padding: 0.75rem 0;
             background-color: var(--bg-body); border-bottom: 1px solid var(--border-color);
@@ -191,40 +145,68 @@
             cursor: pointer; border-radius: 2rem; font-weight: 600; color: var(--text-muted); font-size: 0.9rem;
             white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
         }
-        .tab-btn:hover { background: var(--bg-input); color: var(--text-main); }
         .tab-btn.active { background: var(--bg-card); color: var(--text-main); border-color: var(--accent-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-        .add-tab-btn {
-            background: var(--bg-input); border: 1px dashed var(--text-muted); color: var(--accent-color);
-            width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: none;
-            align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
-        }
 
         .content-card {
             background: var(--bg-card); border: 1px solid var(--border-color);
             border-radius: 1rem; padding: 2.5rem; min-height: 500px; position: relative;
         }
         
+        /* Content Styling (Restored from Old App) */
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        
         .tab-content h3 { font-size: 1.35rem; color: var(--text-main); margin: 2rem 0 1rem; border-left: 4px solid var(--accent-color); padding-left: 1rem; }
         .tab-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
-        .tab-content img { max-width: 100%; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border-color); }
+        
+        /* Colored Boxes */
+        .box { padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border-left: 4px solid; background: var(--bg-box); }
+        .box-title { display: block; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.9; }
+        .box-green { background: var(--box-green-bg); border-color: var(--box-green-border); color: var(--box-green-text); }
+        .box-blue { background: var(--box-blue-bg); border-color: var(--box-blue-border); color: var(--box-blue-text); }
+        .box-red { background: var(--box-red-bg); border-color: var(--box-red-border); color: var(--box-red-text); }
+        .box-purple { background: var(--box-purple-bg); border-color: var(--box-purple-border); color: var(--box-purple-text); }
+        .box-yellow { background: var(--box-yellow-bg); border-color: var(--box-yellow-border); color: var(--box-yellow-text); }
+        
+        .pearl-box { background-color: var(--bg-box); border: 1px solid var(--box-purple-border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .pearl-title { color: var(--box-purple-text); font-weight: 800; margin-bottom: 0.5rem; }
 
-        .ql-toolbar { background: var(--editor-toolbar); border: none !important; border-bottom: 1px solid var(--border-color) !important; border-radius: 0.75rem 0.75rem 0 0; padding: 12px !important; }
-        .ql-container { border: none !important; font-family: inherit !important; font-size: 1.05rem !important; background: var(--editor-bg); min-height: 400px; }
-        .ql-editor { padding: 0 !important; color: var(--text-main); line-height: 1.8; }
+        /* --- 7. EDITOR STYLING (Minimalist) --- */
+        #editorContainer { margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .ql-toolbar { 
+            border: none !important; border-bottom: 1px solid var(--border-color) !important; 
+            background: transparent !important;
+            padding: 8px 0 !important;
+            white-space: nowrap; overflow-x: auto;
+            display: flex; gap: 5px;
+        }
+        .ql-toolbar::-webkit-scrollbar { height: 4px; }
+        .ql-toolbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        .ql-container { border: none !important; font-family: inherit !important; font-size: 1.05rem !important; }
+        .ql-editor { padding: 1rem 0 !important; color: var(--text-main); line-height: 1.8; min-height: 300px; }
         .ql-stroke { stroke: var(--text-muted) !important; } .ql-fill { fill: var(--text-muted) !important; } .ql-picker { color: var(--text-muted) !important; }
         .ql-active .ql-stroke { stroke: var(--accent-color) !important; } .ql-active .ql-fill { fill: var(--accent-color) !important; }
 
-        .content-edit-bar { display: none; justify-content: flex-end; gap: 10px; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        .save-btn { background: var(--accent-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .cancel-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+        /* Admin UI Elements (Hidden by default via CSS) */
+        body:not(.edit-mode) .admin-only { display: none !important; }
+        
+        .add-btn-sidebar { width: 100%; margin-top: 0.8rem; padding: 0.6rem; background: var(--accent-bg); color: var(--accent-text); border: 1px solid var(--accent-color); border-radius: 0.5rem; cursor: pointer; font-weight: 700; }
+        .add-module-btn { background: var(--bg-input); border: 2px dashed var(--border-color); color: var(--text-muted); width: 100%; padding: 1rem; border-radius: 0.75rem; cursor: pointer; font-weight: 600; }
+        .delete-mod-btn { position: absolute; right: -10px; top: -10px; background: #dc2626; color: white; border-radius: 50%; width: 24px; height: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .add-tab-btn { background: var(--bg-input); border: 1px dashed var(--text-muted); color: var(--accent-color); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        
+        .content-edit-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .danger-btn { background: rgba(220, 38, 38, 0.2); border: 1px solid #dc2626; color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; }
+        .save-btn { background: var(--accent-color); color: white; border: none; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; }
+        .cancel-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; }
 
+        /* Context Menu Modal */
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 1rem; width: 90%; max-width: 400px; }
+        .modal-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; }
+
+        /* Mobile */
         .menu-toggle { display: none; background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer; }
         .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 35; backdrop-filter: blur(5px); }
-
         @media (max-width: 768px) {
             .menu-toggle { display: block; margin-right: 0.5rem; }
             aside { position: absolute; height: 100%; width: 85%; transform: translateX(-100%); }
@@ -260,10 +242,9 @@
 
     <div id="home-view">
         <h2 class="home-title">IM Disease</h2>
-        <div id="homeMenuList" class="menu-list">
-            </div>
+        <div id="homeMenuList" class="menu-list"></div>
         <div style="width: 100%; max-width: 400px; margin-top: 1rem;">
-            <button id="btnAddModule" class="add-module-btn">+ Add New Section</button>
+            <button id="btnAddModule" class="add-module-btn admin-only">+ Add New Section</button>
         </div>
     </div>
 
@@ -273,7 +254,7 @@
         <aside id="sidebar">
             <div class="search-box">
                 <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-                <button id="btnAddDisease" class="add-btn-sidebar">+ New Disease</button>
+                <button id="btnAddDisease" class="add-btn-sidebar admin-only">+ New Disease</button>
             </div>
             <div id="diseaseList" style="padding: 0.5rem; padding-bottom: 3rem;"></div>
         </aside>
@@ -286,37 +267,45 @@
             </div>
 
             <div id="caseDetails" class="case-details">
-                <div class="details-header">
+                <div class="details-header" id="detailsHeader">
                     <div id="categoryTag" class="category-tag">Category</div>
                     <h2 id="caseTitle">Disease Name</h2>
-                    
-                    <div id="headerEditTools" class="header-edit-tools">
-                        <input type="text" id="editNameInput" class="header-input" placeholder="Name">
-                        <input type="text" id="editCatInput" class="header-input" placeholder="Category">
-                        <button class="save-btn" onclick="saveMetaData()">Save</button>
-                        <div style="flex:1"></div>
-                        <button class="danger-btn" onclick="deleteCurrentDisease()">Delete Disease</button>
-                    </div>
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-top:5px; opacity:0.5" class="admin-only">(Right-click/Hold to Edit Info)</div>
                 </div>
 
                 <div class="tabs-wrapper">
                     <div class="tabs" id="tabsContainer"></div>
-                    <button id="btnAddTab" class="add-tab-btn" onclick="addNewChapter()">+</button>
+                    <button id="btnAddTab" class="add-tab-btn admin-only" onclick="addNewChapter()">+</button>
                 </div>
 
                 <div class="content-card">
-                    <div id="contentEditBar" class="content-edit-bar">
-                        <span style="margin-right:auto; font-size:0.8rem; color:var(--text-muted); align-self:center;">Editing Chapter...</span>
-                        <button class="danger-btn" onclick="deleteCurrentChapter()" style="padding: 0.4rem 0.8rem;">Delete Tab</button>
-                        <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
-                        <button class="save-btn" onclick="saveChapterContent()">Save Content</button>
-                    </div>
-
-                    <div id="editorContainer" style="display:none;"></div>
                     <div id="viewContainer"></div>
+                    
+                    <div id="editorWrapper" style="display:none;">
+                        <div class="content-edit-bar">
+                            <button class="danger-btn" onclick="deleteCurrentChapter()">Delete Tab</button>
+                            <div style="flex:1"></div>
+                            <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
+                            <button class="save-btn" onclick="saveChapterContent()">Save Content</button>
+                        </div>
+                        <div id="editorContainer"></div>
+                    </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <div id="metaModal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 style="margin:0 0 1rem 0; border:none; padding:0;">Edit Disease Info</h3>
+            <input type="text" id="modalName" class="modal-input" placeholder="Disease Name">
+            <input type="text" id="modalCat" class="modal-input" placeholder="Category">
+            <div style="display:flex; gap:10px; margin-top:1rem; justify-content:flex-end;">
+                <button class="danger-btn" onclick="deleteCurrentDisease()">Delete Disease</button>
+                <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="save-btn" onclick="saveMetaData()">Save</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -327,6 +316,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // CONFIG (Replace with your actual config)
         const firebaseConfig = {
             apiKey: "AIzaSyBd9E9VkE7bllIN13NYGz801F4Jue_VzVk",
             authDomain: "im-helper-d3a4a.firebaseapp.com",
@@ -341,9 +331,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-
         const ADMIN_EMAIL = "qaireelroslan04@gmail.com"; 
-        
+
+        // STATE
         let appMode = null; 
         let currentDiseaseId = null;
         let currentChapterId = null;
@@ -352,8 +342,6 @@
         let modules = []; 
         let isEditMode = false;
         let quill = null;
-        
-        // Listeners
         let diseaseUnsub = null; 
         let chapterUnsub = null;
 
@@ -370,26 +358,23 @@
             categoryTag: document.getElementById('categoryTag'),
             tabsContainer: document.getElementById('tabsContainer'),
             viewContainer: document.getElementById('viewContainer'),
+            editorWrapper: document.getElementById('editorWrapper'),
             adminControls: document.getElementById('adminControls'),
             editModeToggle: document.getElementById('editModeToggle'),
             btnAddDisease: document.getElementById('btnAddDisease'),
             btnAddTab: document.getElementById('btnAddTab'),
             btnAddModule: document.getElementById('btnAddModule'),
-            headerEditTools: document.getElementById('headerEditTools'),
-            editNameInput: document.getElementById('editNameInput'),
-            editCatInput: document.getElementById('editCatInput'),
-            contentEditBar: document.getElementById('contentEditBar'),
-            editorContainer: document.getElementById('editorContainer'),
-            authBtn: document.getElementById('authBtn')
+            authBtn: document.getElementById('authBtn'),
+            metaModal: document.getElementById('metaModal'),
+            modalName: document.getElementById('modalName'),
+            modalCat: document.getElementById('modalCat'),
+            detailsHeader: document.getElementById('detailsHeader')
         };
 
-        // --- AUTH ---
+        // AUTH
         els.authBtn.addEventListener('click', () => {
-            if (auth.currentUser) {
-                signOut(auth).then(() => location.reload());
-            } else {
-                signInWithPopup(auth, provider).catch(e => alert(e.message));
-            }
+            if (auth.currentUser) signOut(auth).then(() => location.reload());
+            else signInWithPopup(auth, provider).catch(e => alert(e.message));
         });
 
         onAuthStateChanged(auth, (user) => {
@@ -397,14 +382,14 @@
                 els.authBtn.innerText = "Log Out";
                 els.adminControls.style.display = "flex";
             } else {
-                els.authBtn.innerText = user ? "Log Out (No Access)" : "Log In";
+                els.authBtn.innerText = user ? "Log Out" : "Log In";
                 els.adminControls.style.display = "none";
                 setEditMode(false);
             }
             renderHomeModules();
         });
 
-        // --- HOME SCREEN ---
+        // HOME MODULES
         const qMod = query(collection(db, "app_modules"), orderBy("order"));
         onSnapshot(qMod, (snap) => {
             modules = [];
@@ -414,13 +399,10 @@
 
         function renderHomeModules() {
             els.homeMenuList.innerHTML = "";
-            if(modules.length === 0) {
-                els.homeMenuList.innerHTML = `<div style="text-align:center; color:var(--text-muted)">No sections yet. Admin, please add one.</div>`;
-            }
             modules.forEach(mod => {
                 const item = document.createElement('div');
                 item.className = 'menu-item';
-                let delBtn = isEditMode ? `<button class="delete-mod-btn" style="display:block" onclick="deleteModule('${mod.id}', event)">×</button>` : "";
+                let delBtn = isEditMode ? `<button class="delete-mod-btn admin-only" onclick="deleteModule('${mod.id}', event)">×</button>` : "";
                 item.innerHTML = `
                     <div class="menu-text"><span class="menu-label">${mod.title}</span><span class="menu-sub">${mod.subtitle}</span></div>
                     <div class="menu-icon">${mod.icon}</div>
@@ -432,26 +414,23 @@
         }
 
         els.btnAddModule.addEventListener('click', async () => {
-            const title = prompt("Section Title (e.g. Pediatrics):");
+            const title = prompt("Section Title:");
             if(!title) return;
-            const subtitle = prompt("Subtitle:") || "";
-            const icon = prompt("Icon Emoji:") || "📁";
             await addDoc(collection(db, "app_modules"), {
-                title: title, subtitle: subtitle, icon: icon, order: modules.length + 1, createdAt: new Date()
+                title: title, subtitle: "", icon: "📁", order: modules.length + 1, createdAt: new Date()
             });
         });
 
         window.deleteModule = async (id, e) => {
             e.stopPropagation();
-            if(confirm("Delete this section?")) await deleteDoc(doc(db, "app_modules", id));
+            if(confirm("Delete section?")) await deleteDoc(doc(db, "app_modules", id));
         };
 
-        // --- NAVIGATION ---
+        // NAVIGATION
         window.goHome = () => {
             appMode = null;
             if (diseaseUnsub) { diseaseUnsub(); diseaseUnsub = null; }
             if (chapterUnsub) { chapterUnsub(); chapterUnsub = null; }
-            
             els.appView.style.display = 'none';
             els.homeView.style.display = 'flex';
             els.modeBadge.style.display = 'none';
@@ -463,43 +442,31 @@
             els.appView.style.display = 'flex';
             els.modeBadge.innerText = modeTitle.toUpperCase();
             els.modeBadge.style.display = "inline-block";
-            
-            // RESET UI
             els.welcomeState.style.display = 'flex';
-            els.caseDetails.style.display = 'none'; 
-            els.caseDetails.classList.remove('active');
-            
+            els.caseDetails.style.display = 'none';
             loadDiseases();
         }
 
         window.toggleSidebar = (force) => {
             const open = els.sidebar.classList.contains('open');
-            const shouldOpen = force !== undefined ? force : !open;
-            els.sidebar.classList.toggle('open', shouldOpen);
-            document.getElementById('backdrop').classList.toggle('open', shouldOpen);
+            els.sidebar.classList.toggle('open', force !== undefined ? force : !open);
+            document.getElementById('backdrop').classList.toggle('open', force !== undefined ? force : !open);
         }
 
+        // LOAD DISEASES (Fixed duplicate issue by removing ordering)
         function loadDiseases() {
-            // 1. Stop previous listener to prevent data leaks
             if (diseaseUnsub) diseaseUnsub();
-            
             diseases = [];
             renderSidebar();
-
-            // 2. FIX: Remove 'orderBy' from the database query.
-            // This prevents the "Missing Index" error that was hiding your data.
-            const q = query(collection(db, "diseases"), where("moduleId", "==", appMode));
             
+            const q = query(collection(db, "diseases"), where("moduleId", "==", appMode));
             diseaseUnsub = onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
-                
-                // 3. Sort the data here in the app instead
-                diseases.sort((a, b) => a.name.localeCompare(b.name));
-                
+                diseases.sort((a,b) => a.name.localeCompare(b.name));
                 renderSidebar();
                 
-                // If the disease you were looking at was deleted by someone else, close the view
+                // If viewing a deleted disease, close it
                 if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
                     els.welcomeState.style.display = 'flex';
                     els.caseDetails.style.display = 'none';
@@ -528,37 +495,27 @@
                 }
             });
         }
-
         document.getElementById('searchInput').addEventListener('input', (e) => renderSidebar(e.target.value));
 
-        // --- CORE LOGIC ---
-        window.selectDisease = (id, manualData = null) => {
+        // SELECT DISEASE
+        window.selectDisease = (id) => {
             currentDiseaseId = id;
-            
-            // Priority: Manual Data > Array Find
-            const data = manualData || diseases.find(d => d.id === id);
-            
-            // FIX: Prevent Crash if data is missing
-            if (!data) {
-                console.log("Loading disease data..."); 
-                return;
-            }
+            const data = diseases.find(d => d.id === id);
+            if (!data) return;
 
             if (chapterUnsub) chapterUnsub();
 
-            // FIX: Force content to be visible
             els.welcomeState.style.display = 'none';
-            els.caseDetails.style.display = 'block'; 
-            requestAnimationFrame(() => els.caseDetails.classList.add('active'));
+            els.caseDetails.style.display = 'block';
+            els.caseDetails.classList.add('active');
 
             els.caseTitle.innerText = data.name;
             els.categoryTag.innerText = data.category;
-            els.editNameInput.value = data.name;
-            els.editCatInput.value = data.category;
             
             els.tabsContainer.innerHTML = "";
             els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey; text-align:center'>Loading content...</div>";
-            
+            cancelEdit(); // Ensure editor is closed
+
             renderSidebar(document.getElementById('searchInput').value);
             if(window.innerWidth <= 768) window.toggleSidebar(false);
 
@@ -572,137 +529,119 @@
 
         function renderTabs() {
             els.tabsContainer.innerHTML = "";
-            
             if(chapters.length === 0) {
-                els.viewContainer.innerHTML = "<div style='padding:3rem; text-align:center; color:var(--text-muted)'>No chapters yet.<br>Click <strong>+</strong> to add one.</div>";
+                els.viewContainer.innerHTML = "<div style='padding:3rem; text-align:center; color:var(--text-muted)'>No chapters yet. Admin, click + to add.</div>";
                 return;
             }
-
             if (!currentChapterId || !chapters.find(c => c.id === currentChapterId)) {
                 currentChapterId = chapters[0].id;
             }
-
             chapters.forEach(chap => {
                 const btn = document.createElement('button');
                 btn.className = `tab-btn ${chap.id === currentChapterId ? 'active' : ''}`;
-                
-                let icon = "📄";
-                const t = chap.title.toLowerCase();
-                if(t.includes('history') || t.includes('def')) icon = "📜";
-                if(t.includes('exam') || t.includes('clinic')) icon = "🩺";
-                if(t.includes('manage') || t.includes('rx')) icon = "💊";
-                if(t.includes('invest') || t.includes('ix')) icon = "🔬";
-
-                btn.innerHTML = `${icon} ${chap.title}`;
-                btn.onclick = () => {
-                    currentChapterId = chap.id;
-                    renderTabs();
-                    renderContent();
-                };
+                btn.innerText = chap.title;
+                btn.onclick = () => { currentChapterId = chap.id; renderTabs(); renderContent(); };
                 els.tabsContainer.appendChild(btn);
             });
             renderContent();
         }
 
         function renderContent() {
-            if(isEditMode && document.getElementById('editorContainer').style.display === 'block') return;
-            
+            if(isEditMode && els.editorWrapper.style.display === 'block') return;
             const chap = chapters.find(c => c.id === currentChapterId);
             if(chap) {
                 if(isEditMode) {
-                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem; text-align:center; border:1px dashed var(--border-color); padding:5px; border-radius:6px;">Tap here to edit content</div>` + chap.content;
-                   els.viewContainer.style.cursor = "pointer";
+                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem; text-align:center; border:1px dashed var(--border-color); padding:5px; border-radius:6px; cursor:pointer">Tap to edit content</div>` + chap.content;
                    els.viewContainer.onclick = () => openEditor();
                 } else {
                    els.viewContainer.innerHTML = chap.content;
-                   els.viewContainer.style.cursor = "default";
                    els.viewContainer.onclick = null;
                 }
             }
         }
 
-        // --- EDIT MODE ---
+        // --- EDITING LOGIC ---
+        // 1. Toggle Mode
         els.editModeToggle.addEventListener('change', (e) => setEditMode(e.target.checked));
-
         function setEditMode(active) {
             isEditMode = active;
-            els.btnAddDisease.style.display = active ? 'block' : 'none';
-            els.btnAddTab.style.display = active ? 'flex' : 'none';
-            els.btnAddModule.style.display = active ? 'block' : 'none';
-            els.headerEditTools.style.display = active ? 'flex' : 'none';
-            if(!appMode) renderHomeModules();
+            if(active) document.body.classList.add('edit-mode');
+            else document.body.classList.remove('edit-mode');
+            
+            if(!appMode) renderHomeModules(); // Update delete buttons
             if(!active) cancelEdit();
             if(currentChapterId) renderContent();
         }
 
-        // ADD DISEASE (FIXED)
+        // 2. Add Disease (Wait for DB)
         els.btnAddDisease.onclick = async () => {
             if(!appMode) { alert("Select a section first."); return; }
-            const name = prompt("New Disease Name:");
+            const name = prompt("Name:");
             if(!name) return;
-            const cat = prompt("Category (e.g. Respiratory):") || "General";
+            const cat = prompt("Category:") || "General";
             
-            try {
-                // 1. Add to Database
-                const docRef = await addDoc(collection(db, "diseases"), {
-                    name: name, category: cat, moduleId: appMode, createdAt: new Date()
-                });
-                
-                // 2. Create local object
-                const newDisease = { id: docRef.id, name: name, category: cat, moduleId: appMode };
-                
-                // 3. Force Sidebar Update
-                diseases.push(newDisease);
-                renderSidebar();
-
-                // 4. Open Immediately
-                selectDisease(docRef.id, newDisease);
-                
-                // 5. Prompt for Chapter
-                if(confirm(`Created '${name}'. Add first chapter now?`)) {
-                    await addNewChapter();
-                }
-            } catch(e) {
-                alert("Error: " + e.message);
-            }
-        };
-        
-        window.addNewChapter = async () => {
-            if(!currentDiseaseId) { alert("Select a disease first."); return; }
-            const title = prompt("Chapter Title:");
-            if(!title) return;
-            
-            await addDoc(collection(db, "diseases", currentDiseaseId, "chapters"), {
-                title: title, content: "<p>Start typing...</p>", order: chapters.length + 1
+            // Just add to DB. The snapshot listener will update the list automatically.
+            await addDoc(collection(db, "diseases"), {
+                name: name, category: cat, moduleId: appMode, createdAt: new Date()
             });
         };
 
+        // 3. Metadata Context Menu (Long Press / Right Click)
+        let pressTimer;
+        els.detailsHeader.addEventListener('contextmenu', (e) => {
+            if(!isEditMode) return;
+            e.preventDefault();
+            showMetaModal();
+        });
+        els.detailsHeader.addEventListener('touchstart', () => {
+            if(!isEditMode) return;
+            pressTimer = setTimeout(showMetaModal, 800);
+        });
+        els.detailsHeader.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+        function showMetaModal() {
+            const d = diseases.find(x => x.id === currentDiseaseId);
+            if(!d) return;
+            els.modalName.value = d.name;
+            els.modalCat.value = d.category;
+            els.metaModal.style.display = 'flex';
+        }
+        window.closeModal = () => els.metaModal.style.display = 'none';
+
+        window.saveMetaData = async () => {
+            await updateDoc(doc(db, "diseases", currentDiseaseId), {
+                name: els.modalName.value, category: els.modalCat.value
+            });
+            closeModal();
+        };
+
         window.deleteCurrentDisease = async () => {
-            if(!confirm("Delete this disease?")) return;
+            if(!confirm("Delete Disease?")) return;
             const batch = writeBatch(db);
             chapters.forEach(c => batch.delete(doc(db, "diseases", currentDiseaseId, "chapters", c.id)));
             await batch.commit();
             await deleteDoc(doc(db, "diseases", currentDiseaseId));
-            
             currentDiseaseId = null;
+            closeModal();
             els.caseDetails.style.display = 'none';
             els.welcomeState.style.display = 'flex';
         };
 
-        window.saveMetaData = async () => {
-            await updateDoc(doc(db, "diseases", currentDiseaseId), {
-                name: els.editNameInput.value, category: els.editCatInput.value
+        // 4. Editor Functions
+        window.addNewChapter = async () => {
+            if(!currentDiseaseId) return;
+            const title = prompt("Tab Title:");
+            if(!title) return;
+            await addDoc(collection(db, "diseases", currentDiseaseId, "chapters"), {
+                title: title, content: "<p>...</p>", order: chapters.length + 1
             });
-            alert("Saved.");
         };
 
         function openEditor() {
             const chap = chapters.find(c => c.id === currentChapterId);
             if(!chap) return;
             els.viewContainer.style.display = 'none';
-            els.editorContainer.style.display = 'block';
-            els.contentEditBar.style.display = 'flex';
-            els.headerEditTools.style.display = 'none';
+            els.editorWrapper.style.display = 'block';
             els.tabsContainer.style.pointerEvents = 'none';
 
             if(!quill) {
@@ -710,7 +649,7 @@
                     theme: 'snow',
                     modules: {
                         toolbar: [
-                            [{ 'header': [2, 3, false] }],
+                            [{ 'header': [3, false] }],
                             ['bold', 'italic', 'underline', 'strike'],
                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                             ['link', 'image', 'video', 'formula'],
@@ -729,16 +668,14 @@
         };
 
         window.cancelEdit = () => {
-            els.editorContainer.style.display = 'none';
+            els.editorWrapper.style.display = 'none';
             els.viewContainer.style.display = 'block';
-            els.contentEditBar.style.display = 'none';
-            els.headerEditTools.style.display = 'flex';
             els.tabsContainer.style.pointerEvents = 'auto';
             if(currentChapterId) renderContent();
         };
 
         window.deleteCurrentChapter = async () => {
-            if(confirm("Delete tab?")) {
+            if(confirm("Delete this tab?")) {
                 await deleteDoc(doc(db, "diseases", currentDiseaseId, "chapters", currentChapterId));
                 cancelEdit();
                 currentChapterId = null;
