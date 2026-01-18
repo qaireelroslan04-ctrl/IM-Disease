@@ -480,16 +480,30 @@
         }
 
         function loadDiseases() {
+            // 1. Stop previous listener to prevent data leaks
             if (diseaseUnsub) diseaseUnsub();
+            
             diseases = [];
             renderSidebar();
 
-            // Only load diseases for the current appMode (Module ID)
-            const q = query(collection(db, "diseases"), where("moduleId", "==", appMode), orderBy("name"));
+            // 2. FIX: Remove 'orderBy' from the database query.
+            // This prevents the "Missing Index" error that was hiding your data.
+            const q = query(collection(db, "diseases"), where("moduleId", "==", appMode));
+            
             diseaseUnsub = onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
+                
+                // 3. Sort the data here in the app instead
+                diseases.sort((a, b) => a.name.localeCompare(b.name));
+                
                 renderSidebar();
+                
+                // If the disease you were looking at was deleted by someone else, close the view
+                if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
+                    els.welcomeState.style.display = 'flex';
+                    els.caseDetails.style.display = 'none';
+                }
             });
         }
 
