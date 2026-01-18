@@ -112,13 +112,25 @@
             display: flex; align-items: center; justify-content: space-between;
             padding: 1.2rem 1.5rem; background: var(--bg-card);
             border: 1px solid var(--border-color); border-radius: 0.75rem;
-            cursor: pointer; transition: all 0.2s ease;
+            cursor: pointer; transition: all 0.2s ease; position: relative;
         }
         .menu-item:hover { border-color: var(--accent-color); transform: translateX(5px); background: var(--bg-input); }
         .menu-text { display: flex; flex-direction: column; }
         .menu-label { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
         .menu-icon { font-size: 1.5rem; opacity: 0.8; }
+        
+        /* Home Screen Admin Add Button */
+        .add-module-btn {
+            background: var(--bg-input); border: 2px dashed var(--border-color); color: var(--text-muted);
+            width: 100%; padding: 1rem; border-radius: 0.75rem; cursor: pointer; font-weight: 600;
+            display: none; /* Hidden by default */
+        }
+        .add-module-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .delete-mod-btn {
+            position: absolute; right: -15px; top: -10px; background: red; color: white;
+            border-radius: 50%; width: 25px; height: 25px; border: none; cursor: pointer; display: none;
+        }
 
         /* APP SCREEN */
         #app-view { display: none; flex: 1; overflow: hidden; position: relative; min-height: 0; }
@@ -197,7 +209,6 @@
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         
-        /* Content styling */
         .tab-content h3 { font-size: 1.35rem; color: var(--text-main); margin: 2rem 0 1rem; border-left: 4px solid var(--accent-color); padding-left: 1rem; }
         .tab-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
         .tab-content img { max-width: 100%; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border-color); }
@@ -250,28 +261,10 @@
 
     <div id="home-view">
         <h2 class="home-title">IM Disease</h2>
-        <div class="menu-list">
-            <div class="menu-item" onclick="startApp('long')">
-                <div class="menu-text">
-                    <span class="menu-label">Long Case</span>
-                    <span class="menu-sub">Detailed clerking & management</span>
-                </div>
-                <div class="menu-icon">📖</div>
+        <div id="homeMenuList" class="menu-list">
             </div>
-            <div class="menu-item" onclick="startApp('short')">
-                <div class="menu-text">
-                    <span class="menu-label">Short Case</span>
-                    <span class="menu-sub">Examination & rapid diagnosis</span>
-                </div>
-                <div class="menu-icon">⚡</div>
-            </div>
-            <div class="menu-item" onclick="startApp('general')">
-                <div class="menu-text">
-                    <span class="menu-label">General Notes</span>
-                    <span class="menu-sub">Pathology & Theory</span>
-                </div>
-                <div class="menu-icon">📚</div>
-            </div>
+        <div style="width: 100%; max-width: 400px; margin-top: 1rem;">
+            <button id="btnAddModule" class="add-module-btn">+ Add New Section</button>
         </div>
     </div>
 
@@ -352,11 +345,14 @@
         const provider = new GoogleAuthProvider();
 
         const ADMIN_EMAIL = "qaireelroslan04@gmail.com"; 
-        let appMode = null;
+        
+        let appMode = null; // Contains 'id' of the active module
+        let appModeName = null; // Display name
         let currentDiseaseId = null;
         let currentChapterId = null;
         let diseases = [];
         let chapters = [];
+        let modules = []; // Dynamic Home Tabs
         let isEditMode = false;
         let quill = null;
 
@@ -365,6 +361,7 @@
             appView: document.getElementById('app-view'),
             sidebar: document.getElementById('sidebar'),
             diseaseList: document.getElementById('diseaseList'),
+            homeMenuList: document.getElementById('homeMenuList'),
             welcomeState: document.getElementById('welcomeState'),
             caseDetails: document.getElementById('caseDetails'),
             modeBadge: document.getElementById('modeBadge'),
@@ -376,6 +373,7 @@
             editModeToggle: document.getElementById('editModeToggle'),
             btnAddDisease: document.getElementById('btnAddDisease'),
             btnAddTab: document.getElementById('btnAddTab'),
+            btnAddModule: document.getElementById('btnAddModule'),
             headerEditTools: document.getElementById('headerEditTools'),
             editNameInput: document.getElementById('editNameInput'),
             editCatInput: document.getElementById('editCatInput'),
@@ -384,7 +382,7 @@
             authBtn: document.getElementById('authBtn')
         };
 
-        // AUTH
+        // --- AUTH ---
         els.authBtn.addEventListener('click', () => {
             if (auth.currentUser) {
                 signOut(auth).then(() => location.reload());
@@ -402,9 +400,74 @@
                 els.adminControls.style.display = "none";
                 setEditMode(false);
             }
+            // Trigger UI update for delete buttons on home
+            renderHomeModules();
         });
 
-        // NAV
+        // --- HOME SCREEN DYNAMICS ---
+        // Load Modules (Tabs on Home Screen)
+        const qMod = query(collection(db, "app_modules"), orderBy("order"));
+        onSnapshot(qMod, (snap) => {
+            modules = [];
+            snap.forEach(d => modules.push({id: d.id, ...d.data()}));
+            renderHomeModules();
+        });
+
+        function renderHomeModules() {
+            els.homeMenuList.innerHTML = "";
+            const isAdmin = auth.currentUser && auth.currentUser.email === ADMIN_EMAIL;
+
+            if(modules.length === 0) {
+                els.homeMenuList.innerHTML = `<div style="text-align:center; color:var(--text-muted)">No sections yet. Admin, please add one.</div>`;
+            }
+
+            modules.forEach(mod => {
+                const item = document.createElement('div');
+                item.className = 'menu-item';
+                
+                // Delete button for admin
+                let delBtn = "";
+                if(isEditMode) {
+                    delBtn = `<button class="delete-mod-btn" style="display:block" onclick="deleteModule('${mod.id}', event)">×</button>`;
+                }
+
+                item.innerHTML = `
+                    <div class="menu-text">
+                        <span class="menu-label">${mod.title}</span>
+                        <span class="menu-sub">${mod.subtitle}</span>
+                    </div>
+                    <div class="menu-icon">${mod.icon}</div>
+                    ${delBtn}
+                `;
+                item.onclick = () => startApp(mod.id, mod.title);
+                els.homeMenuList.appendChild(item);
+            });
+        }
+
+        // Add Module (Admin)
+        els.btnAddModule.addEventListener('click', async () => {
+            const title = prompt("Section Title (e.g. Pediatrics):");
+            if(!title) return;
+            const subtitle = prompt("Subtitle (e.g. Drug Doses & Cases):") || "";
+            const icon = prompt("Icon Emoji (e.g. 👶):") || "📁";
+            
+            await addDoc(collection(db, "app_modules"), {
+                title: title,
+                subtitle: subtitle,
+                icon: icon,
+                order: modules.length + 1,
+                createdAt: new Date()
+            });
+        });
+
+        window.deleteModule = async (id, e) => {
+            e.stopPropagation();
+            if(confirm("Delete this section? All diseases inside will be hidden.")) {
+                await deleteDoc(doc(db, "app_modules", id));
+            }
+        };
+
+        // --- NAVIGATION ---
         window.goHome = () => {
             appMode = null;
             els.appView.style.display = 'none';
@@ -412,13 +475,13 @@
             els.modeBadge.style.display = 'none';
         }
 
-        window.startApp = (mode) => {
-            appMode = mode;
+        window.startApp = (modeId, modeTitle) => {
+            appMode = modeId;
+            appModeName = modeTitle;
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
             
-            let label = mode === 'long' ? "LONG CASE" : mode === 'short' ? "SHORT CASE" : "GENERAL";
-            els.modeBadge.innerText = label;
+            els.modeBadge.innerText = modeTitle.toUpperCase();
             els.modeBadge.style.display = "inline-block";
             
             els.welcomeState.style.display = 'flex';
@@ -434,9 +497,10 @@
             document.getElementById('backdrop').classList.toggle('open', shouldOpen);
         }
 
-        // DATA
+        // --- DATA LOADING & RENDER ---
         function loadDiseases() {
-            const q = query(collection(db, "diseases"), where("mode", "==", appMode), orderBy("name"));
+            // Filter by the module ID (appMode)
+            const q = query(collection(db, "diseases"), where("moduleId", "==", appMode), orderBy("name"));
             onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
@@ -493,8 +557,9 @@
 
         function renderTabs() {
             els.tabsContainer.innerHTML = "";
+            
             if(chapters.length === 0) {
-                els.viewContainer.innerHTML = "<p style='color:gray; padding:2rem'>No chapters yet. Add one!</p>";
+                els.viewContainer.innerHTML = "<div style='padding:3rem; text-align:center; color:var(--text-muted)'>No chapters yet.<br>Click <strong>+</strong> to add one.</div>";
                 return;
             }
 
@@ -505,12 +570,13 @@
             chapters.forEach(chap => {
                 const btn = document.createElement('button');
                 btn.className = `tab-btn ${chap.id === currentChapterId ? 'active' : ''}`;
+                
                 let icon = "📄";
                 const t = chap.title.toLowerCase();
-                if(t.includes('history')) icon = "📜";
-                if(t.includes('exam')) icon = "🩺";
-                if(t.includes('management') || t.includes('treatment')) icon = "💊";
-                if(t.includes('investigation')) icon = "🔬";
+                if(t.includes('history') || t.includes('def')) icon = "📜";
+                if(t.includes('exam') || t.includes('clinic')) icon = "🩺";
+                if(t.includes('manage') || t.includes('rx')) icon = "💊";
+                if(t.includes('invest') || t.includes('ix')) icon = "🔬";
 
                 btn.innerHTML = `${icon} ${chap.title}`;
                 btn.onclick = () => {
@@ -528,7 +594,7 @@
             const chap = chapters.find(c => c.id === currentChapterId);
             if(chap) {
                 if(isEditMode) {
-                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem">Click below to edit</div>` + chap.content;
+                   els.viewContainer.innerHTML = `<div style="opacity:0.6; margin-bottom:10px; font-size:0.8rem; text-align:center; border:1px dashed var(--border-color); padding:5px; border-radius:6px;">Tap here to edit content</div>` + chap.content;
                    els.viewContainer.style.cursor = "pointer";
                    els.viewContainer.onclick = () => openEditor();
                 } else {
@@ -539,39 +605,67 @@
             }
         }
 
-        // EDIT MODE
+        // --- EDIT MODE LOGIC ---
         els.editModeToggle.addEventListener('change', (e) => setEditMode(e.target.checked));
 
         function setEditMode(active) {
             isEditMode = active;
+            
+            // Toggle visibility of add buttons
             els.btnAddDisease.style.display = active ? 'block' : 'none';
             els.btnAddTab.style.display = active ? 'flex' : 'none';
+            els.btnAddModule.style.display = active ? 'block' : 'none'; // Home add button
             els.headerEditTools.style.display = active ? 'flex' : 'none';
             
+            // Re-render home to show delete buttons
+            if(!appMode) renderHomeModules();
+
             if(!active) cancelEdit();
             if(currentChapterId) renderContent();
         }
 
+        // ADD DISEASE (FIXED)
         els.btnAddDisease.onclick = async () => {
-            const name = prompt("Disease Name:");
+            if(!appMode) {
+                alert("Please select a section from the Home screen first.");
+                return;
+            }
+            const name = prompt("New Disease Name:");
             if(!name) return;
             const cat = prompt("Category (e.g. Respiratory):") || "General";
             
-            await addDoc(collection(db, "diseases"), {
-                name: name,
-                category: cat,
-                mode: appMode,
-                createdAt: new Date()
-            });
+            try {
+                // 1. Add Doc
+                const docRef = await addDoc(collection(db, "diseases"), {
+                    name: name,
+                    category: cat,
+                    moduleId: appMode, // Link to current module
+                    createdAt: new Date()
+                });
+                
+                // 2. Auto-Select the new disease
+                await selectDisease(docRef.id);
+                
+                // 3. Prompt for first chapter immediately
+                if(confirm(`Created '${name}'. Add first chapter now?`)) {
+                    await addNewChapter();
+                }
+            } catch(e) {
+                alert("Error adding disease: " + e.message);
+            }
         };
 
         window.addNewChapter = async () => {
-            const title = prompt("Tab Title (e.g. Definition, Signs):");
-            if(!title || !currentDiseaseId) return;
+            if(!currentDiseaseId) {
+                alert("Select a disease first.");
+                return;
+            }
+            const title = prompt("Chapter Title (e.g. Definition, Signs):");
+            if(!title) return;
             
             await addDoc(collection(db, "diseases", currentDiseaseId, "chapters"), {
                 title: title,
-                content: "<p>New content...</p>",
+                content: "<p>Start typing content here...</p>",
                 order: chapters.length + 1
             });
         };
@@ -597,6 +691,7 @@
                 name: els.editNameInput.value,
                 category: els.editCatInput.value
             });
+            alert("Saved.");
         };
 
         function openEditor() {
@@ -618,6 +713,7 @@
                             ['bold', 'italic', 'underline', 'strike'],
                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                             ['link', 'image', 'video', 'formula'],
+                            [{ 'color': [] }, { 'background': [] }],
                             ['clean']
                         ]
                     }
