@@ -102,8 +102,32 @@
         }
         .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
         
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .sidebar-toggle { display: none; } /* Mobile uses backdrop/header to toggle */
+            aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
+            aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+            
+            /* FIX: Make toggle visible on mobile */
+            .sidebar-toggle { 
+                display: flex; 
+                left: 0; 
+                bottom: 80px; /* Move up slightly to avoid FAB */
+                transform: rotate(180deg); /* Point Right (>) to indicate "Open" */
+                border-radius: 0 8px 8px 0;
+                border-left: none;
+            }
+            
+            /* When Sidebar is Open */
+            .sidebar-toggle.mobile-open {
+                left: 80%; /* Move with sidebar */
+                transform: rotate(0deg); /* Point Left (<) to indicate "Close" */
+                border-radius: 8px 0 0 8px; /* Flip border radius look */
+                border-right: none;
+                border-left: 1px solid var(--border-color);
+            }
+
+            .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
+            .backdrop.open { display: block; }
         }
 
         /* --- MAIN CONTENT --- */
@@ -441,15 +465,28 @@
         };
 
         window.toggleRetract = () => {
-            els.sidebar.classList.toggle('collapsed');
-            document.getElementById('sidebarToggle').classList.toggle('collapsed');
+            // Check if Mobile
+            if (window.innerWidth <= 768) {
+                // If mobile, use the mobile toggle function
+                toggleSidebar();
+            } else {
+                // If PC, use the collapse function
+                els.sidebar.classList.toggle('collapsed');
+                document.getElementById('sidebarToggle').classList.toggle('collapsed');
+            }
         };
 
-        window.toggleSidebar = () => {
-            // For mobile overlay logic
+        window.toggleSidebar = (forceState) => {
             const isOpen = els.sidebar.style.transform === 'translateX(0px)';
-            els.sidebar.style.transform = isOpen ? '' : 'translateX(0px)';
-            document.getElementById('backdrop').style.display = isOpen ? 'none' : 'block';
+            const shouldOpen = forceState !== undefined ? forceState : !isOpen;
+            
+            els.sidebar.style.transform = shouldOpen ? 'translateX(0px)' : '';
+            document.getElementById('backdrop').style.display = shouldOpen ? 'block' : 'none';
+            
+            // FIX: Update button position for mobile
+            const btn = document.getElementById('sidebarToggle');
+            if(shouldOpen) btn.classList.add('mobile-open');
+            else btn.classList.remove('mobile-open');
         };
 
         function selectDisease(data) {
