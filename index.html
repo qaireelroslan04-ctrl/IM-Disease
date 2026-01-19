@@ -16,21 +16,10 @@
     <style>
         /* --- 1. DESIGN SYSTEM --- */
         :root {
-            --bg-body: #000000;
-            --bg-sidebar: #050505;
-            --bg-card: #0a0a0a;
-            --bg-box: #111111;
-            --bg-input: #171717;
-            --border-color: #27272a;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent-color: #3b82f6;
-            --accent-bg: #172554;
-            --accent-text: #bfdbfe;
-            --header-bg: rgba(0, 0, 0, 0.85);
-            --bg-tab: rgba(30, 30, 30, 0.6);
-            --editor-bg: #0a0a0a;
-            --editor-toolbar: #111111;
+            --bg-body: #000000; --bg-sidebar: #050505; --bg-card: #0a0a0a; --bg-box: #111111; --bg-input: #171717;
+            --border-color: #27272a; --text-main: #e2e8f0; --text-muted: #94a3b8;
+            --accent-color: #3b82f6; --accent-bg: #172554; --accent-text: #bfdbfe;
+            --header-bg: rgba(0, 0, 0, 0.85); --bg-tab: rgba(30, 30, 30, 0.95); /* Tabs slightly less transparent for stickiness */
             
             /* Colored Boxes */
             --box-green-bg: rgba(6, 78, 59, 0.3); --box-green-border: #059669; --box-green-text: #d1fae5;
@@ -41,73 +30,30 @@
         }
 
         [data-theme="light"] {
-            --bg-body: #f0f4f8;
-            --bg-sidebar: #ffffff;
-            --bg-card: #ffffff;
-            --bg-box: #f8fafc;
-            --bg-input: #f1f5f9;
-            --border-color: #e2e8f0;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --accent-color: #0284c7;
-            --accent-bg: #e0f2fe;
-            --accent-text: #0c4a6e;
-            --header-bg: rgba(255, 255, 255, 0.95);
-            --bg-tab: rgba(255, 255, 255, 0.85);
-            --editor-bg: #ffffff;
-            --editor-toolbar: #f1f5f9;
+            --bg-body: #f0f4f8; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-box: #f8fafc; --bg-input: #f1f5f9;
+            --border-color: #e2e8f0; --text-main: #1e293b; --text-muted: #64748b;
+            --accent-color: #0284c7; --accent-bg: #e0f2fe; --accent-text: #0c4a6e;
+            --header-bg: rgba(255, 255, 255, 0.95); --bg-tab: rgba(255, 255, 255, 0.95);
         }
 
-        /* --- 2. BASE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-body); color: var(--text-main);
-            height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* --- 3. HEADER & USER MENU --- */
-        header {
-            background-color: var(--header-bg);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 0 1.5rem; height: 60px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            z-index: 50; flex-shrink: 0;
-        }
+        /* --- HEADER --- */
+        header { background-color: var(--header-bg); backdrop-filter: blur(12px); padding: 0 1.5rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 50; flex-shrink: 0; }
         .header-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; overflow: hidden; }
         .logo-icon { font-size: 1.2rem; cursor: pointer; }
         .app-title { font-size: 1.25rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer;}
-        .mode-badge { 
-            background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color);
-            font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; 
-            margin-left: 10px; display: none;
-        }
+        .mode-badge { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; margin-left: 10px; display: none; }
 
-        /* User Avatar & Dropdown */
         .user-container { position: relative; display: flex; align-items: center; gap: 15px; }
-        .user-avatar {
-            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
-            border: 2px solid var(--border-color); cursor: pointer;
-            transition: border-color 0.2s; background: var(--bg-input);
-        }
-        .user-avatar:hover { border-color: var(--accent-color); }
-        
-        .user-dropdown {
-            display: none; position: absolute; top: 50px; right: 0;
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 0.75rem; width: 240px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            flex-direction: column; overflow: hidden; z-index: 100;
-        }
-        .user-dropdown.visible { display: flex; animation: fadeIn 0.2s; }
-        
-        .menu-item { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; transition: background 0.2s; color: var(--text-main); }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); cursor: pointer; background: var(--bg-input); }
+        .user-dropdown { display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden; z-index: 100; }
+        .user-dropdown.visible { display: flex; }
+        .menu-item { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-main); }
         .menu-item:hover { background: var(--bg-input); }
-        .menu-divider { height: 1px; background: var(--border-color); margin: 4px 0; }
         .menu-info { padding: 12px 16px; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-box); border-top: 1px solid var(--border-color); }
 
-        /* Edit Switch */
         .edit-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
         .edit-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-input); transition: .4s; border-radius: 34px; border: 1px solid var(--border-color); }
@@ -115,92 +61,113 @@
         input:checked + .slider { background-color: var(--accent-color); border-color: var(--accent-color); }
         input:checked + .slider:before { transform: translateX(16px); background-color: white; }
 
-        /* --- 4. LAYOUT --- */
+        /* --- LAYOUT --- */
         #home-view { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; overflow-y: auto; width: 100%; height: 100%; }
-        .home-title { font-size: 2.5rem; font-weight: 900; text-align: center; background: linear-gradient(135deg, var(--accent-color), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .home-title { font-size: 2.5rem; font-weight: 900; background: linear-gradient(135deg, var(--accent-color), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .menu-list { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 400px; }
-        .menu-item-home {
-            display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.5rem;
-            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem;
-            cursor: pointer; transition: all 0.2s ease; position: relative;
-        }
+        .menu-item-home { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; cursor: pointer; transition: all 0.2s ease; position: relative; }
         .menu-item-home:hover { border-color: var(--accent-color); transform: translateX(5px); background: var(--bg-input); }
         .menu-text { display: flex; flex-direction: column; }
         .menu-label { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
-        .menu-icon { font-size: 1.5rem; opacity: 0.8; }
         
         #app-view { display: none; flex: 1; overflow: hidden; position: relative; min-height: 0; }
-        aside { width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow-y: auto; z-index: 40; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        aside { width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow-y: auto; z-index: 40; transition: transform 0.3s; }
         .search-box { padding: 1rem; background: var(--bg-sidebar); position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--border-color); }
         .search-input { width: 100%; padding: 0.85rem; background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; outline: none; }
-        
         .category-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 800; padding: 1.5rem 0.75rem 0.5rem; border-bottom: 1px solid var(--border-color); opacity: 0.8; }
         .case-btn { width: 100%; text-align: left; padding: 1rem 0.75rem; background: none; border: none; cursor: pointer; color: var(--text-main); font-weight: 500; font-size: 0.95rem; border-radius: 0.5rem; margin-bottom: 2px; }
         .case-btn.active { background-color: var(--accent-bg); color: var(--accent-text); font-weight: 700; border-left: 3px solid var(--accent-color); }
 
         main { flex: 1; overflow-y: auto; padding: 0 2rem; background-color: var(--bg-body); position: relative; }
-        .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-muted); padding: 2rem; }
+        .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--text-muted); }
         .case-details { max-width: 1000px; margin: 0 auto; display: none; padding-bottom: 100px; }
         .case-details.active { display: block; animation: fadeIn 0.4s ease-in-out; }
-
         .details-header { margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding: 2rem 0 1rem 0; }
         .category-tag { font-size: 0.8rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         h2 { font-size: 2rem; color: var(--text-main); font-weight: 800; line-height: 1.2; margin: 0; }
         
-        .tabs-wrapper { position: sticky; top: 0; z-index: 10; padding: 0.75rem 0; background-color: var(--bg-body); border-bottom: 1px solid var(--border-color); margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem; display: flex; gap: 10px; align-items: center; }
-        .tabs { display: flex; overflow-x: auto; gap: 0.75rem; scrollbar-width: none; flex: 1; }
+        /* --- MODERN TABS (Sticky) --- */
+        .tabs-wrapper { 
+            position: sticky; top: 0; z-index: 20; /* High Z-index */
+            padding: 0.5rem 0; background-color: var(--bg-body); 
+            border-bottom: 1px solid var(--border-color); 
+            margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem; 
+            display: flex; gap: 20px; align-items: center; 
+        }
+        .tabs { display: flex; overflow-x: auto; gap: 20px; scrollbar-width: none; flex: 1; }
         .tabs::-webkit-scrollbar { display: none; }
-        .tab-btn { flex: 0 0 auto; padding: 0.65rem 1.2rem; border: 1px solid var(--border-color); background: var(--bg-tab); cursor: pointer; border-radius: 2rem; font-weight: 600; color: var(--text-muted); font-size: 0.9rem; white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
-        .tab-btn.active { background: var(--bg-card); color: var(--text-main); border-color: var(--accent-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-        .content-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2.5rem; min-height: 500px; position: relative; }
         
-        /* CONTENT STYLING */
+        .tab-btn {
+            background: none; border: none; padding: 10px 0; cursor: pointer;
+            font-weight: 600; color: var(--text-muted); font-size: 0.95rem;
+            position: relative; white-space: nowrap; transition: color 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--accent-color); }
+        .tab-btn.active::after {
+            content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px;
+            background: var(--accent-color); border-radius: 3px 3px 0 0;
+        }
+
+        .content-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2.5rem; min-height: 500px; }
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        .tab-content h1 { font-size: 1.8rem; margin: 1.5rem 0; color: var(--text-main); }
-        .tab-content h2 { font-size: 1.5rem; margin: 1.2rem 0; color: var(--accent-text); border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
-        .tab-content h3 { font-size: 1.35rem; color: var(--text-main); margin: 1rem 0; border-left: 4px solid var(--accent-color); padding-left: 1rem; }
-        .tab-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
         
-        /* Colored Boxes */
-        .box { padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; border-left: 4px solid; background: var(--bg-box); }
+        /* Typography in Editor */
+        .tab-content h1 { font-size: 2em; margin-bottom: 0.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; color: var(--text-main); }
+        .tab-content h2 { font-size: 1.5em; margin-top: 1em; color: var(--accent-text); }
+        .tab-content h3 { font-size: 1.25em; margin-top: 1em; color: var(--text-main); border-left: 4px solid var(--accent-color); padding-left: 10px; }
+        
+        /* Colored Boxes Classes (Used by Quill) */
+        .box { padding: 1.5rem; border-radius: 0.75rem; margin: 1.5rem 0; border-left: 4px solid; background: var(--bg-box); }
         .box-title { display: block; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.9; }
         .box-green { background: var(--box-green-bg); border-color: var(--box-green-border); color: var(--box-green-text); }
         .box-blue { background: var(--box-blue-bg); border-color: var(--box-blue-border); color: var(--box-blue-text); }
         .box-red { background: var(--box-red-bg); border-color: var(--box-red-border); color: var(--box-red-text); }
         .box-purple { background: var(--box-purple-bg); border-color: var(--box-purple-border); color: var(--box-purple-text); }
         .box-yellow { background: var(--box-yellow-bg); border-color: var(--box-yellow-border); color: var(--box-yellow-text); }
-        .pearl-box { background-color: var(--bg-box); border: 1px solid var(--box-purple-border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .pearl-title { color: var(--box-purple-text); font-weight: 800; margin-bottom: 0.5rem; }
 
-        /* --- 5. STICKY & CUSTOM EDITOR TOOLBAR --- */
-        #editorWrapper { margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 0; position: relative; }
+        /* --- PRO EDITOR TOOLBAR --- */
+        #editorWrapper { margin-top: 10px; border-top: 1px solid var(--border-color); position: relative; }
         
-        /* Custom Toolbar Container */
         #quill-toolbar {
-            position: sticky; top: 0; z-index: 10;
+            /* STICKY LOGIC: Sticks below tabs (approx 60px height of tabs) */
+            position: sticky; top: 60px; z-index: 15;
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-color);
-            padding: 10px 5px;
-            display: flex; flex-wrap: wrap; gap: 5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            padding: 8px 10px;
+            display: flex; flex-wrap: nowrap; gap: 8px; align-items: center;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Slight shadow for depth */
+            /* Scrollbar styling */
+            scrollbar-width: thin; scrollbar-color: var(--accent-color) var(--bg-input);
         }
-        
-        /* Toolbar Buttons */
-        .ql-btn-custom {
-            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main);
-            padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .ql-btn-custom:hover { background: var(--accent-bg); border-color: var(--accent-color); }
-        
-        .ql-color-box { width: 20px; height: 20px; border-radius: 4px; margin-right: 0; border: none; cursor: pointer; }
-        
-        /* Editor Area */
+        #quill-toolbar::-webkit-scrollbar { height: 4px; }
+        #quill-toolbar::-webkit-scrollbar-track { background: var(--bg-input); }
+        #quill-toolbar::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 4px; }
+
+        /* Dropdown Styling */
+        .ql-picker { color: var(--text-main) !important; font-size: 14px !important; font-weight: 500 !important; }
+        .ql-picker-label { padding-left: 4px !important; }
+        .ql-picker-options { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5); padding: 5px !important; }
+        .ql-picker-item { color: var(--text-muted) !important; padding: 5px !important; }
+        .ql-picker-item:hover { color: var(--accent-color) !important; background: var(--bg-input); }
+        .ql-picker-item.ql-selected { color: var(--accent-color) !important; font-weight: bold; }
+
+        /* Toolbar Icons */
+        .ql-toolbar button { color: var(--text-muted) !important; width: 28px !important; height: 28px !important; }
+        .ql-toolbar button:hover { color: var(--accent-color) !important; background: var(--bg-input); border-radius: 4px; }
+        .ql-toolbar .ql-active { color: var(--accent-color) !important; }
+        .ql-stroke { stroke: currentColor !important; } 
+        .ql-fill { fill: currentColor !important; }
+
+        /* Custom Box Buttons */
+        .box-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0; }
+        .box-btn:hover { transform: scale(1.1); }
+
         .ql-container { border: none !important; font-family: inherit !important; font-size: 1.05rem !important; }
-        .ql-editor { padding: 1.5rem 0.5rem !important; color: var(--text-main); line-height: 1.8; min-height: 400px; }
+        .ql-editor { padding: 2rem 0.5rem !important; color: var(--text-main); line-height: 1.8; min-height: 400px; }
 
         /* Admin & Modals */
         body:not(.edit-mode) .admin-only { display: none !important; }
@@ -217,10 +184,8 @@
         .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 1rem; width: 90%; max-width: 450px; display:flex; flex-direction:column; max-height:85vh; }
         .modal-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; }
-        
         .import-list { flex:1; overflow-y:auto; border:1px solid var(--border-color); background:var(--bg-input); border-radius:8px; padding:10px; margin:10px 0; }
         .import-item { display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border-color); }
-        .import-item:last-child { border:none; }
 
         .menu-toggle { display: none; background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer; }
         .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 35; backdrop-filter: blur(5px); }
@@ -277,12 +242,9 @@
 
     <div id="app-view">
         <div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
-        
         <aside id="sidebar">
-            <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-                <button id="btnAddDisease" class="add-btn-sidebar admin-only">+ New Disease</button>
-            </div>
+            <div class="search-box"><input type="text" id="searchInput" class="search-input" placeholder="Search..."></div>
+            <button id="btnAddDisease" class="add-btn-sidebar admin-only">+ New Disease</button>
             <div id="diseaseList" style="padding: 0.5rem; padding-bottom: 3rem;"></div>
         </aside>
 
@@ -310,23 +272,39 @@
                     
                     <div id="editorWrapper" style="display:none;">
                         <div id="quill-toolbar">
-                            <button class="ql-btn-custom ql-header" value="1">H1</button>
-                            <button class="ql-btn-custom ql-header" value="2">H2</button>
-                            <button class="ql-btn-custom ql-header" value="3">H3</button>
-                            <span style="width:1px; background:var(--border-color); margin:0 5px;"></span>
+                            <select class="ql-header">
+                                <option value="1">Heading 1</option>
+                                <option value="2">Heading 2</option>
+                                <option value="3">Heading 3</option>
+                                <option selected>Normal</option>
+                            </select>
+                            <select class="ql-size">
+                                <option value="small"></option>
+                                <option selected></option>
+                                <option value="large"></option>
+                                <option value="huge"></option>
+                            </select>
+                            
+                            <span style="width:1px; background:var(--border-color); height:20px; margin:0 5px;"></span>
+                            
                             <button class="ql-bold"></button>
                             <button class="ql-italic"></button>
                             <button class="ql-underline"></button>
                             <button class="ql-list" value="ordered"></button>
                             <button class="ql-list" value="bullet"></button>
-                            <span style="width:1px; background:var(--border-color); margin:0 5px;"></span>
-                            <button class="ql-color-box" style="background:#064e3b; border:1px solid #059669;" onclick="insertBox('box-green')"></button>
-                            <button class="ql-color-box" style="background:#1e3a8a; border:1px solid #2563eb;" onclick="insertBox('box-blue')"></button>
-                            <button class="ql-color-box" style="background:#7f1d1d; border:1px solid #dc2626;" onclick="insertBox('box-red')"></button>
-                            <button class="ql-color-box" style="background:#713f12; border:1px solid #d97706;" onclick="insertBox('box-yellow')"></button>
-                            <button class="ql-color-box" style="background:#581c87; border:1px solid #9333ea;" onclick="insertBox('pearl-box')"></button>
-                            <span style="width:1px; background:var(--border-color); margin:0 5px;"></span>
-                            <button class="ql-btn-custom" onclick="fixLatex()">🪄 Fix LaTeX</button>
+                            
+                            <span style="width:1px; background:var(--border-color); height:20px; margin:0 5px;"></span>
+                            
+                            <button class="box-btn" style="background:#064e3b; border-color:#059669;" onclick="insertBox('box-green')"></button>
+                            <button class="box-btn" style="background:#1e3a8a; border-color:#2563eb;" onclick="insertBox('box-blue')"></button>
+                            <button class="box-btn" style="background:#7f1d1d; border-color:#dc2626;" onclick="insertBox('box-red')"></button>
+                            <button class="box-btn" style="background:#713f12; border-color:#d97706;" onclick="insertBox('box-yellow')"></button>
+                            <button class="box-btn" style="background:#581c87; border-color:#9333ea;" onclick="insertBox('box-purple')"></button>
+                            
+                            <span style="width:1px; background:var(--border-color); height:20px; margin:0 5px;"></span>
+                            
+                            <button class="ql-formula"></button>
+                            <button style="width:auto !important; padding:0 8px;" onclick="fixLatex()">🪄 Fix LaTeX</button>
                         </div>
 
                         <div id="editorContainer"></div>
@@ -376,7 +354,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // FIREBASE CONFIG
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBd9E9VkE7bllIN13NYGz801F4Jue_VzVk",
             authDomain: "im-helper-d3a4a.firebaseapp.com",
@@ -392,6 +370,22 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         const ADMIN_EMAIL = "qaireelroslan04@gmail.com"; 
+
+        // --- CUSTOM QUILL BLOT FOR BOXES (Important for Saving) ---
+        const Block = Quill.import('blots/block');
+        class BoxBlot extends Block {
+            static create(value) {
+                let node = super.create();
+                node.setAttribute('class', 'box ' + value);
+                return node;
+            }
+            static formats(node) {
+                return node.getAttribute('class').replace('box ', '');
+            }
+        }
+        BoxBlot.blotName = 'box';
+        BoxBlot.tagName = 'div';
+        Quill.register(BoxBlot);
 
         // STATE
         let appMode = null; 
@@ -437,7 +431,7 @@
             detailsHeader: document.getElementById('detailsHeader')
         };
 
-        // --- AUTH & USER MENU ---
+        // --- AUTH ---
         window.toggleUserMenu = () => els.userMenu.classList.toggle('visible');
         document.addEventListener('click', (e) => {
             if (!els.userMenu.contains(e.target) && !els.userAvatar.contains(e.target)) els.userMenu.classList.remove('visible');
@@ -462,27 +456,36 @@
             renderHomeModules();
         });
 
-        // --- EDITOR & CUSTOM FUNCTIONS ---
+        // --- EDITOR LOGIC (BOXES & LATEX) ---
         window.insertBox = (boxClass) => {
             if(!quill) return;
             const range = quill.getSelection(true);
-            const title = prompt("Box Title (e.g. Golden Questions):") || "Title";
-            const html = `<div class="box ${boxClass}"><span class="box-title">${title}</span><p>Content goes here...</p></div><p><br></p>`;
-            quill.clipboard.dangerouslyPasteHTML(range.index, html);
+            if (!range) return;
+            // Insert Box Structure
+            quill.insertText(range.index, "Title\n", 'bold', true);
+            quill.formatLine(range.index, 1, 'box', boxClass);
+            quill.insertText(range.index + 6, "\nContent goes here...", 'box', false); // Escape box
         }
 
         window.fixLatex = () => {
             if(!quill) return;
-            let html = quill.root.innerHTML;
-            // Matches $$...$$
-            html = html.replace(/\$\$(.*?)\$\$/g, (match, tex) => {
-                try { return katex.renderToString(tex, { throwOnError: false }); } 
-                catch(e) { return match; }
+            const text = quill.getText();
+            const regex = /\$\$(.*?)\$\$/g;
+            let match;
+            // Iterate backwards to preserve indices
+            const matches = [];
+            while ((match = regex.exec(text)) !== null) {
+                matches.unshift({ index: match.index, length: match[0].length, tex: match[1] });
+            }
+            
+            matches.forEach(m => {
+                quill.deleteText(m.index, m.length);
+                quill.insertEmbed(m.index, 'formula', m.tex);
+                quill.insertText(m.index + 1, " "); // Space to exit formula
             });
-            quill.root.innerHTML = html;
         }
 
-        // --- IMPORT SYSTEM ---
+        // --- IMPORT ---
         window.importFile = async () => {
             if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) {
                 alert("Only Admin can import."); return;
@@ -524,39 +527,30 @@
             els.userMenu.classList.remove('visible');
         }
 
-        window.closeImportModal = () => {
-            els.importModal.style.display = "none";
-            pendingImportData = [];
-        }
+        window.closeImportModal = () => { els.importModal.style.display = "none"; pendingImportData = []; }
 
         window.processImport = async () => {
             const toImport = [];
             pendingImportData.forEach((item, index) => {
-                const cb = document.getElementById(`imp-${index}`);
-                if (cb.checked) toImport.push(item);
+                if (document.getElementById(`imp-${index}`).checked) toImport.push(item);
             });
-
             if (toImport.length === 0) return;
 
             const modName = prompt("Enter Target Section Name (e.g. Long Case):");
             if (!modName) return;
-            
             const targetMod = modules.find(m => m.title.toLowerCase() === modName.toLowerCase());
-            if (!targetMod) { alert("Section not found. Check Home Screen."); return; }
+            if (!targetMod) { alert("Section not found."); return; }
 
             els.importModal.style.display = "none";
-            
             let count = 0;
             for (const item of toImport) {
                 try {
                     const dRef = await addDoc(collection(db, "diseases"), {
                         name: item.name, category: item.category || "General", moduleId: targetMod.id, createdAt: new Date()
                     });
-                    
                     const ignore = ['id','name','category','image','category '];
                     const keys = Object.keys(item).filter(k => !ignore.includes(k));
                     let ord = 1;
-                    
                     for (const key of keys) {
                         const title = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         await addDoc(collection(db, "diseases", dRef.id, "chapters"), {
@@ -566,11 +560,11 @@
                     count++;
                 } catch (e) { console.error(e); }
             }
-            alert(`Imported ${count} diseases into ${targetMod.title}.`);
+            alert(`Imported ${count} diseases.`);
             closeImportModal();
         }
 
-        // --- MAIN APP LOGIC ---
+        // --- APP LOGIC ---
         const qMod = query(collection(db, "app_modules"), orderBy("order"));
         onSnapshot(qMod, (snap) => {
             modules = [];
@@ -637,14 +631,12 @@
             if (diseaseUnsub) diseaseUnsub();
             diseases = [];
             renderSidebar();
-            
             const q = query(collection(db, "diseases"), where("moduleId", "==", appMode));
             diseaseUnsub = onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
                 diseases.sort((a,b) => a.name.localeCompare(b.name));
                 renderSidebar();
-                
                 if (currentDiseaseId && !diseases.find(d => d.id === currentDiseaseId)) {
                     els.welcomeState.style.display = 'flex';
                     els.caseDetails.style.display = 'none';
@@ -677,16 +669,13 @@
             currentDiseaseId = id;
             const data = diseases.find(d => d.id === id);
             if (!data) return;
-
             if (chapterUnsub) chapterUnsub();
 
             els.welcomeState.style.display = 'none';
             els.caseDetails.style.display = 'block';
             els.caseDetails.classList.add('active');
-
             els.caseTitle.innerText = data.name;
             els.categoryTag.innerText = data.category;
-            
             els.tabsContainer.innerHTML = "";
             els.viewContainer.innerHTML = "<div style='padding:2rem; color:grey; text-align:center'>Loading content...</div>";
             cancelEdit(); 
@@ -735,13 +724,11 @@
             }
         }
 
-        // --- EDITING ---
         els.editModeToggle.addEventListener('change', (e) => setEditMode(e.target.checked));
         function setEditMode(active) {
             isEditMode = active;
             if(active) document.body.classList.add('edit-mode');
             else document.body.classList.remove('edit-mode');
-            
             if(!appMode) renderHomeModules(); 
             if(!active) cancelEdit();
             if(currentChapterId) renderContent();
