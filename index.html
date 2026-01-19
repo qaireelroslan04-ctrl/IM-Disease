@@ -107,25 +107,37 @@
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
             
-            /* Toggle Button Mobile Styling */
+            /* FIX: Stable Toggle Button Styling */
             .sidebar-toggle { 
                 display: flex; 
-                left: -1px; /* Pushes flat side against screen edge to fix border glitch */
+                position: fixed; /* Fixed to viewport */
+                left: 0; 
                 bottom: 80px; 
-                transform: rotate(180deg); /* Points Right (>) */
+                width: 32px; height: 42px;
+                
+                /* Shape: Flat against left wall, Rounded on right */
                 border-radius: 0 8px 8px 0;
-                border-left: 1px solid var(--border-color); /* Ensure border exists */
-                box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                border: 1px solid var(--border-color);
+                border-left: none; /* No border on the flat side */
+                background: var(--bg-card);
+                box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+                
+                align-items: center; justify-content: center;
+                transition: left 0.3s ease; /* Animate position only */
             }
             
             /* When Sidebar is Open */
             .sidebar-toggle.mobile-open {
-                left: 80%; /* Moves with sidebar */
-                transform: rotate(0deg); /* Points Left (<) */
-                border-radius: 8px 0 0 8px; /* Rounded on left */
-                border-right: none; 
-                border-left: 1px solid var(--border-color);
-                margin-left: -24px; /* Pulls it slightly onto the sidebar for seamless look */
+                left: 80%; /* Move to right edge of sidebar */
+            }
+
+            /* Rotate ONLY the arrow text, not the box */
+            .sidebar-toggle div {
+                transition: transform 0.3s;
+                transform: rotate(180deg); /* Default: Points Right (>) for "Open Me" */
+            }
+            .sidebar-toggle.mobile-open div {
+                transform: rotate(0deg); /* Open: Points Left (<) for "Close Me" */
             }
 
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
@@ -249,7 +261,7 @@
                 </div>
                 <div id="sidebarContent" class="sidebar-content"></div>
             </aside>
-            <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleRetract()">❮</div>
+            <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleRetract()"><div>❮</div></div>
 
             <main>
                 <div id="welcomeMsg" class="welcome-msg">Select a disease from the sidebar</div>
@@ -388,7 +400,7 @@
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
             
-            // FIX: Use toggleSidebar(true) to sync button state and position
+            // FIX: Auto-open sidebar AND update button position on mobile
             if(window.innerWidth <= 768) {
                 toggleSidebar(true);
             }
