@@ -107,28 +107,25 @@
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
             
-            /* FIX: Make toggle visible on mobile and fix border cut-off */
+            /* Toggle Button Mobile Styling */
             .sidebar-toggle { 
                 display: flex; 
-                left: 0; 
+                left: -1px; /* Pushes flat side against screen edge to fix border glitch */
                 bottom: 80px; 
-                transform: rotate(180deg); /* Point Right (>) */
-                
-                /* Fix for cut-off: swap borders when rotated against left edge */
-                border-right: none;
-                border-left: 1px solid var(--border-color);
-                border-radius: 8px 0 0 8px;
+                transform: rotate(180deg); /* Points Right (>) */
+                border-radius: 0 8px 8px 0;
+                border-left: 1px solid var(--border-color); /* Ensure border exists */
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
             }
             
-            /* When Sidebar is Open on mobile */
+            /* When Sidebar is Open */
             .sidebar-toggle.mobile-open {
-                left: 80%; /* Move with sidebar */
-                transform: rotate(0deg); /* Point Left (<) */
-                
-                /* Reset borders to normal orientation */
-                border-right: 1px solid var(--border-color);
-                border-left: none;
-                border-radius: 0 8px 8px 0;
+                left: 80%; /* Moves with sidebar */
+                transform: rotate(0deg); /* Points Left (<) */
+                border-radius: 8px 0 0 8px; /* Rounded on left */
+                border-right: none; 
+                border-left: 1px solid var(--border-color);
+                margin-left: -24px; /* Pulls it slightly onto the sidebar for seamless look */
             }
 
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
@@ -391,11 +388,9 @@
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
             
-            // FIX: Auto-open sidebar on mobile so screen isn't empty
+            // FIX: Use toggleSidebar(true) to sync button state and position
             if(window.innerWidth <= 768) {
-                // Manually trigger open style
-                els.sidebar.style.transform = 'translateX(0px)';
-                document.getElementById('backdrop').style.display = 'block';
+                toggleSidebar(true);
             }
             
             loadDiseases();
@@ -472,12 +467,12 @@
         window.toggleRetract = () => {
             // Check if Mobile
             if (window.innerWidth <= 768) {
-                // If mobile, use the mobile toggle function
-                toggleSidebar();
+                toggleSidebar(); // Use mobile logic
             } else {
-                // If PC, use the collapse function
+                // PC Logic
                 els.sidebar.classList.toggle('collapsed');
-                document.getElementById('sidebarToggle').classList.toggle('collapsed');
+                const btn = document.getElementById('sidebarToggle');
+                if(btn) btn.classList.toggle('collapsed');
             }
         };
 
@@ -490,8 +485,10 @@
             
             // FIX: Update button position for mobile
             const btn = document.getElementById('sidebarToggle');
-            if(shouldOpen) btn.classList.add('mobile-open');
-            else btn.classList.remove('mobile-open');
+            if(btn) {
+                if(shouldOpen) btn.classList.add('mobile-open');
+                else btn.classList.remove('mobile-open');
+            }
         };
 
         function selectDisease(data) {
