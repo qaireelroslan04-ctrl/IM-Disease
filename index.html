@@ -91,14 +91,20 @@
         .disease-item.active { background: var(--bg-input); border-left-color: var(--accent-color); font-weight: 600; }
         .sortable-ghost { opacity: 0.4; background: var(--bg-input); }
 
-        /* Sidebar Toggle Btn */
+       /* Sidebar Toggle Btn (Floating) */
         .sidebar-toggle {
-            position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px;
-            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted);
-            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            z-index: 50; transition: transform 0.3s;
+            position: absolute; bottom: 20px; left: 300px; /* Matches --sidebar-width */
+            width: 24px; height: 40px; 
+            background: var(--bg-card); border: 1px solid var(--border-color); border-left: none;
+            border-radius: 0 8px 8px 0; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            z-index: 45; transition: left 0.3s ease, transform 0.3s;
         }
-        aside.collapsed .sidebar-toggle { transform: rotate(180deg); right: -40px; background: var(--bg-card); }
+        .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
+        
+        @media (max-width: 768px) {
+            .sidebar-toggle { display: none; } /* Mobile uses backdrop/header to toggle */
+        }
 
         /* --- MAIN CONTENT --- */
         main { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; }
@@ -216,8 +222,8 @@
                     <input type="text" id="searchSidebar" class="search-input" placeholder="Search...">
                 </div>
                 <div id="sidebarContent" class="sidebar-content"></div>
-                <div class="sidebar-toggle" onclick="toggleRetract()">❮</div>
             </aside>
+            <div class="sidebar-toggle" id="sidebarToggle" onclick="toggleRetract()">❮</div>
 
             <main>
                 <div id="welcomeMsg" class="welcome-msg">Select a disease from the sidebar</div>
@@ -388,14 +394,20 @@
                 const listContainer = document.createElement('div');
                 listContainer.className = "disease-list";
                 // Add Sortable to this list
+                // Inside renderSidebar...
                 if(isAdmin) {
                     new Sortable(listContainer, {
                         group: 'diseases',
                         animation: 150,
+                        delay: 700, // Wait 0.7s before drag starts
+                        delayOnTouchOnly: true, // Only on touch
+                        onStart: () => {
+                            // If drag starts (after 0.7s), hide any popup that opened
+                            els.ctxMenu.style.display = 'none';
+                        },
                         onEnd: (evt) => handleReorder(evt, cat)
                     });
                 }
-
                 diseases.filter(d => d.category === cat).forEach(d => {
                     const item = document.createElement('div');
                     item.className = `disease-item ${currentDiseaseId === d.id ? 'active' : ''}`;
@@ -430,6 +442,7 @@
 
         window.toggleRetract = () => {
             els.sidebar.classList.toggle('collapsed');
+            document.getElementById('sidebarToggle').classList.toggle('collapsed');
         };
 
         window.toggleSidebar = () => {
@@ -445,13 +458,18 @@
             els.caseDetails.style.display = 'flex';
             els.detailTitle.innerText = data.name;
             els.detailCat.innerText = data.category;
-            renderSidebar(); // Update active state
+            renderSidebar(); 
             
-            // Render Tabs (Empty for now)
+            // Render Tabs
             els.tabsContainer.innerHTML = `
                 <div class="tab-pill active">Notes</div>
                 ${isAdmin ? '<div class="add-tab-btn" onclick="alert(\'Add Tab logic coming soon\')">+</div>' : ''}
             `;
+
+            // FIX: Auto-close sidebar on mobile
+            if(window.innerWidth <= 768) {
+                toggleSidebar(false); // Close
+            }
         }
 
         // --- CONTEXT MENU SYSTEM ---
@@ -460,20 +478,22 @@
 
             // PC Right Click
             el.oncontextmenu = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
                 showMenuForType(e.clientX, e.clientY, type, data);
             };
 
-            // Mobile Long Press
+            // Mobile Long Press (0.2s)
             let timer;
             el.addEventListener('touchstart', (e) => {
                 timer = setTimeout(() => {
+                    // Open menu after 200ms
                     showMenuForType(e.touches[0].clientX, e.touches[0].clientY, type, data);
-                }, 600);
+                }, 200); 
             });
-            el.addEventListener('touchend', () => clearTimeout(timer));
+            
+            // Cancel if touch moves (scrolls) or ends
             el.addEventListener('touchmove', () => clearTimeout(timer));
+            el.addEventListener('touchend', () => clearTimeout(timer));
         }
 
         function showMenuForType(x, y, type, data) {
@@ -577,25 +597,24 @@
         window.closeModal = () => els.modal.style.display = 'none';
 
         // --- LOGIC: DELETE & REORDER ---
-        async function deleteItem(col, id) {
-            if(confirm("Permanently delete?")) await deleteDoc(doc(db, col, id));
-        }
-
-        async function handleReorder(evt) {
-            const itemEl = evt.item;
-            const newCategory = evt.to.parentElement.querySelector('.category-header').innerText; // Get new category name
-            const diseaseId = itemEl.dataset.id; // We need to ensure dataset.id is set in renderSidebar
-
-            if (!diseaseId || !newCategory) return;
-
-            // 1. Optimistic Update (Prevent UI jump)
-            const disease = diseases.find(d => d.id === diseaseId);
-            if (disease) disease.category = newCategory;
-
-            // 2. Database Update
-            await updateDoc(doc(db, "diseases", diseaseId), {
-                category: newCategory
+        async function handleReorder(evt, targetCategory) {
+            // 1. Get the new category from the DOM header where item was dropped
+            // The item is dropped into a listContainer, its parent is catContainer
+            const newCategory = evt.to.parentElement.querySelector('.category-header').innerText;
+            
+            const batch = writeBatch(db);
+            const listItems = evt.to.querySelectorAll('.disease-item');
+            
+            // 2. Batch update ALL items in this list to save the order
+            listItems.forEach((el, index) => {
+                const id = el.dataset.id;
+                batch.update(doc(db, "diseases", id), {
+                    category: newCategory,
+                    order: index + 1 // Save numerical order
+                });
             });
+
+            await batch.commit();
         }
 
         // FAB Listeners
