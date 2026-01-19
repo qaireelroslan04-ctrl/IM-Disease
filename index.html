@@ -11,8 +11,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-
     <style>
         /* --- 1. DESIGN SYSTEM --- */
         :root {
@@ -87,85 +85,95 @@
         .category-tag { font-size: 0.8rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         h2 { font-size: 2rem; color: var(--text-main); font-weight: 800; line-height: 1.2; margin: 0; }
         
-        /* --- MODERN TABS (Sticky) --- */
+        /* --- TABS --- */
         .tabs-wrapper { 
             position: sticky; top: 0; z-index: 20; 
-            padding: 0.5rem 0; background-color: var(--bg-body); 
+            padding: 0.75rem 0; background-color: var(--bg-body); 
             border-bottom: 1px solid var(--border-color); 
             margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem; 
-            display: flex; gap: 20px; align-items: center; 
+            display: flex; gap: 15px; align-items: center; 
         }
-        .tabs { display: flex; overflow-x: auto; gap: 20px; scrollbar-width: none; flex: 1; }
+        .tabs { display: flex; overflow-x: auto; gap: 10px; scrollbar-width: none; flex: 1; }
         .tabs::-webkit-scrollbar { display: none; }
+        
         .tab-btn {
-            background: none; border: none; padding: 10px 0; cursor: pointer;
-            font-weight: 600; color: var(--text-muted); font-size: 0.95rem;
-            position: relative; white-space: nowrap; transition: color 0.2s;
+            background: var(--bg-tab); border: 1px solid var(--border-color); 
+            padding: 8px 16px; cursor: pointer; border-radius: 8px;
+            font-weight: 600; color: var(--text-muted); font-size: 0.9rem;
+            white-space: nowrap; transition: all 0.2s;
         }
-        .tab-btn:hover { color: var(--text-main); }
-        .tab-btn.active { color: var(--accent-color); }
-        .tab-btn.active::after {
-            content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px;
-            background: var(--accent-color); border-radius: 3px 3px 0 0;
+        .tab-btn:hover { background: var(--bg-input); color: var(--text-main); }
+        .tab-btn.active { 
+            background: var(--bg-card); color: var(--accent-color); 
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         .content-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2.5rem; min-height: 500px; }
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         
-        /* Typography */
+        /* Content Styling */
         .tab-content h1 { font-size: 2em; margin-bottom: 0.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; color: var(--text-main); }
         .tab-content h2 { font-size: 1.5em; margin-top: 1em; color: var(--accent-text); }
         .tab-content h3 { font-size: 1.25em; margin-top: 1em; color: var(--text-main); border-left: 4px solid var(--accent-color); padding-left: 10px; }
         
-        /* Colored Boxes */
-        .box { padding: 1.5rem; border-radius: 0.75rem; margin: 1.5rem 0; border-left: 4px solid; background: var(--bg-box); }
-        .box-title { display: block; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.9; }
-        .box-green { background: var(--box-green-bg); border-color: var(--box-green-border); color: var(--box-green-text); }
-        .box-blue { background: var(--box-blue-bg); border-color: var(--box-blue-border); color: var(--box-blue-text); }
-        .box-red { background: var(--box-red-bg); border-color: var(--box-red-border); color: var(--box-red-text); }
-        .box-purple { background: var(--box-purple-bg); border-color: var(--box-purple-border); color: var(--box-purple-text); }
-        .box-yellow { background: var(--box-yellow-bg); border-color: var(--box-yellow-border); color: var(--box-yellow-text); }
+        /* The Actual Boxes (Table based for Quill compatibility) */
+        table.box-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 1.5rem 0; background: var(--bg-box); border-radius: 0.75rem; border-left: 4px solid #888; overflow: hidden; }
+        table.box-table td { padding: 1.5rem; vertical-align: top; color: var(--text-main); }
+        
+        .box-green { border-left-color: #059669 !important; background: var(--box-green-bg) !important; }
+        .box-green td { color: var(--box-green-text) !important; }
+        .box-blue { border-left-color: #2563eb !important; background: var(--box-blue-bg) !important; }
+        .box-blue td { color: var(--box-blue-text) !important; }
+        .box-red { border-left-color: #dc2626 !important; background: var(--box-red-bg) !important; }
+        .box-red td { color: var(--box-red-text) !important; }
+        .box-purple { border-left-color: #9333ea !important; background: var(--box-purple-bg) !important; }
+        .box-purple td { color: var(--box-purple-text) !important; }
+        .box-yellow { border-left-color: #d97706 !important; background: var(--box-yellow-bg) !important; }
+        .box-yellow td { color: var(--box-yellow-text) !important; }
 
-        /* --- PRO EDITOR TOOLBAR (FIXED: WRAPPING) --- */
+        /* Legacy Div Boxes Support */
+        div.box { padding: 1.5rem; border-radius: 0.75rem; margin: 1.5rem 0; border-left: 4px solid; background: var(--bg-box); }
+        
+        /* --- PRO EDITOR TOOLBAR --- */
         #editorWrapper { margin-top: 10px; border-top: 1px solid var(--border-color); position: relative; }
         
         #quill-toolbar {
-            position: sticky; top: 60px; z-index: 25; /* Higher than tabs */
+            position: sticky; top: 60px; z-index: 25; 
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-color);
             padding: 8px 10px;
-            /* WRAPPING ENABLED TO FIX DROPDOWN CLIPPING */
             display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
             overflow: visible; /* Important for dropdowns */
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        /* Dropdown Styling */
+        /* FAB Button */
+        .fab-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--accent-color); color: white;
+            border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-size: 24px; cursor: pointer; z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        .fab-btn:hover { transform: scale(1.1); }
+        .fab-btn:active { transform: scale(0.95); }
+
         .ql-picker { color: var(--text-main) !important; font-size: 14px !important; font-weight: 500 !important; }
         .ql-picker-label { padding-left: 4px !important; }
-        /* Dropdown menu positioning */
-        .ql-picker-options { 
-            background-color: var(--bg-card) !important; 
-            border: 1px solid var(--border-color) !important; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
-            padding: 5px !important; 
-            z-index: 1000 !important; /* Ensure on top */
-        }
+        .ql-picker-options { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 5px !important; z-index: 1000 !important; }
         .ql-picker-item { color: var(--text-muted) !important; padding: 5px !important; }
         .ql-picker-item:hover { color: var(--accent-color) !important; background: var(--bg-input); }
         .ql-picker-item.ql-selected { color: var(--accent-color) !important; font-weight: bold; }
 
-        /* Toolbar Icons */
         .ql-toolbar button { color: var(--text-muted) !important; width: 28px !important; height: 28px !important; }
         .ql-toolbar button:hover { color: var(--accent-color) !important; background: var(--bg-input); border-radius: 4px; }
         .ql-toolbar .ql-active { color: var(--accent-color) !important; }
         .ql-stroke { stroke: currentColor !important; } 
         .ql-fill { fill: currentColor !important; }
-
-        /* Custom Box Buttons */
-        .box-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0; }
-        .box-btn:hover { transform: scale(1.1); }
 
         .ql-container { border: none !important; font-family: inherit !important; font-size: 1.05rem !important; }
         .ql-editor { padding: 2rem 0.5rem !important; color: var(--text-main); line-height: 1.8; min-height: 400px; }
@@ -185,6 +193,13 @@
         .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
         .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 1rem; width: 90%; max-width: 450px; display:flex; flex-direction:column; max-height:85vh; }
         .modal-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; }
+        
+        /* Swatches */
+        .color-swatches { display: flex; gap: 10px; margin: 10px 0; }
+        .swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; opacity: 0.6; }
+        .swatch:hover { opacity: 1; transform: scale(1.1); }
+        .swatch.selected { border-color: white; opacity: 1; transform: scale(1.1); }
+
         .import-list { flex:1; overflow-y:auto; border:1px solid var(--border-color); background:var(--bg-input); border-radius:8px; padding:10px; margin:10px 0; }
         .import-item { display:flex; align-items:center; gap:10px; padding:8px; border-bottom:1px solid var(--border-color); }
 
@@ -199,7 +214,6 @@
             .content-card { padding: 1.5rem; }
             .tabs-wrapper { margin: 0 -1rem 1rem -1rem; padding: 0.75rem 1rem; }
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -293,19 +307,8 @@
                             <button class="ql-underline"></button>
                             <button class="ql-list" value="ordered"></button>
                             <button class="ql-list" value="bullet"></button>
-                            
-                            <span style="width:1px; background:var(--border-color); height:20px; margin:0 5px;"></span>
-                            
-                            <button class="box-btn" style="background:#064e3b; border-color:#059669;" onclick="insertBox('box-green')"></button>
-                            <button class="box-btn" style="background:#1e3a8a; border-color:#2563eb;" onclick="insertBox('box-blue')"></button>
-                            <button class="box-btn" style="background:#7f1d1d; border-color:#dc2626;" onclick="insertBox('box-red')"></button>
-                            <button class="box-btn" style="background:#713f12; border-color:#d97706;" onclick="insertBox('box-yellow')"></button>
-                            <button class="box-btn" style="background:#581c87; border-color:#9333ea;" onclick="insertBox('box-purple')"></button>
-                            
-                            <span style="width:1px; background:var(--border-color); height:20px; margin:0 5px;"></span>
-                            
-                            <button class="ql-formula"></button>
-                            <button style="width:auto !important; padding:0 8px;" onclick="fixLatex()">🪄 Fix LaTeX</button>
+                            <button class="ql-link"></button>
+                            <button class="ql-image"></button>
                         </div>
 
                         <div id="editorContainer"></div>
@@ -316,6 +319,8 @@
                             <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
                             <button class="save-btn" onclick="saveChapterContent()">Save Content</button>
                         </div>
+
+                        <button class="fab-btn" onclick="openBoxModal()">+</button>
                     </div>
                 </div>
             </div>
@@ -331,6 +336,27 @@
                 <button class="danger-btn" onclick="deleteCurrentDisease()">Delete Disease</button>
                 <button class="cancel-btn" onclick="closeModal()">Cancel</button>
                 <button class="save-btn" onclick="saveMetaData()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="boxModal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 style="margin:0 0 1rem 0;">Add New Box</h3>
+            <input type="text" id="boxTitle" class="modal-input" placeholder="Box Title (e.g. Golden Questions)">
+            
+            <div style="margin:10px 0; font-size:0.9rem; color:var(--text-muted)">Select Color:</div>
+            <div class="color-swatches">
+                <div class="swatch" style="background:#059669" onclick="selectColor(this, 'box-green')"></div>
+                <div class="swatch" style="background:#2563eb" onclick="selectColor(this, 'box-blue')"></div>
+                <div class="swatch" style="background:#dc2626" onclick="selectColor(this, 'box-red')"></div>
+                <div class="swatch" style="background:#d97706" onclick="selectColor(this, 'box-yellow')"></div>
+                <div class="swatch" style="background:#9333ea" onclick="selectColor(this, 'box-purple')"></div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:1.5rem; justify-content:flex-end;">
+                <button class="cancel-btn" onclick="closeBoxModal()">Cancel</button>
+                <button class="save-btn" onclick="confirmInsertBox()">Insert Box</button>
             </div>
         </div>
     </div>
@@ -372,22 +398,6 @@
         const provider = new GoogleAuthProvider();
         const ADMIN_EMAIL = "qaireelroslan04@gmail.com"; 
 
-        // --- CUSTOM QUILL BLOT FOR BOXES (Important for Saving) ---
-        const Block = Quill.import('blots/block');
-        class BoxBlot extends Block {
-            static create(value) {
-                let node = super.create();
-                node.setAttribute('class', 'box ' + value);
-                return node;
-            }
-            static formats(node) {
-                return node.getAttribute('class').replace('box ', '');
-            }
-        }
-        BoxBlot.blotName = 'box';
-        BoxBlot.tagName = 'div';
-        Quill.register(BoxBlot);
-
         // STATE
         let appMode = null; 
         let currentDiseaseId = null;
@@ -400,6 +410,7 @@
         let diseaseUnsub = null; 
         let chapterUnsub = null;
         let pendingImportData = [];
+        let selectedBoxColor = 'box-blue';
 
         const els = {
             homeView: document.getElementById('home-view'),
@@ -424,6 +435,7 @@
             userAvatar: document.getElementById('userAvatar'),
             menuAuthText: document.getElementById('menuAuthText'),
             metaModal: document.getElementById('metaModal'),
+            boxModal: document.getElementById('boxModal'),
             importModal: document.getElementById('importModal'),
             importList: document.getElementById('importList'),
             importCount: document.getElementById('importCount'),
@@ -457,33 +469,41 @@
             renderHomeModules();
         });
 
-        // --- EDITOR LOGIC (BOXES & LATEX) ---
-        window.insertBox = (boxClass) => {
-            if(!quill) return;
-            const range = quill.getSelection(true);
-            if (!range) return;
-            // Insert Box Structure
-            quill.insertText(range.index, "Title\n", 'bold', true);
-            quill.formatLine(range.index, 1, 'box', boxClass);
-            quill.insertText(range.index + 6, "\nContent goes here...", 'box', false); // Escape box
+        // --- BOX CREATION LOGIC ---
+        window.openBoxModal = () => {
+            document.getElementById('boxTitle').value = "";
+            els.boxModal.style.display = "flex";
+        }
+        window.closeBoxModal = () => els.boxModal.style.display = "none";
+        
+        window.selectColor = (el, color) => {
+            document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedBoxColor = color;
         }
 
-        window.fixLatex = () => {
+        window.confirmInsertBox = () => {
             if(!quill) return;
-            const text = quill.getText();
-            const regex = /\$\$(.*?)\$\$/g;
-            let match;
-            // Iterate backwards to preserve indices
-            const matches = [];
-            while ((match = regex.exec(text)) !== null) {
-                matches.unshift({ index: match.index, length: match[0].length, tex: match[1] });
-            }
+            const title = document.getElementById('boxTitle').value || "Title";
             
-            matches.forEach(m => {
-                quill.deleteText(m.index, m.length);
-                quill.insertEmbed(m.index, 'formula', m.tex);
-                quill.insertText(m.index + 1, " "); // Space to exit formula
-            });
+            // Insert Table Structure simulating a box
+            const range = quill.getSelection(true);
+            const index = range ? range.index : quill.getLength();
+            
+            const html = `
+                <table class="box-table ${selectedBoxColor}">
+                    <tr>
+                        <td>
+                            <h3>${title}</h3>
+                            <p>Write content here...</p>
+                        </td>
+                    </tr>
+                </table>
+                <p><br></p>
+            `;
+            
+            quill.clipboard.dangerouslyPasteHTML(index, html);
+            closeBoxModal();
         }
 
         // --- IMPORT ---
