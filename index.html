@@ -66,7 +66,9 @@
             width: var(--sidebar-width); background: var(--bg-sidebar); 
             border-right: 1px solid var(--border-color); display: flex; flex-direction: column; 
             transition: width 0.3s ease, transform 0.3s ease; z-index: 40;
-            position: relative;
+            position: relative; 
+            overflow: hidden; 
+            white-space: nowrap; /* Prevents text wrapping during collapse */
         }
         aside.collapsed { width: 0; border: none; }
         
@@ -353,6 +355,14 @@
             currentModuleId = id;
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
+            
+            // FIX: Auto-open sidebar on mobile so screen isn't empty
+            if(window.innerWidth <= 768) {
+                // Manually trigger open style
+                els.sidebar.style.transform = 'translateX(0px)';
+                document.getElementById('backdrop').style.display = 'block';
+            }
+            
             loadDiseases();
         }
 
@@ -389,6 +399,7 @@
                 diseases.filter(d => d.category === cat).forEach(d => {
                     const item = document.createElement('div');
                     item.className = `disease-item ${currentDiseaseId === d.id ? 'active' : ''}`;
+                    item.dataset.id = d.id; // REQUIRED FOR DRAG & DROP
                     item.innerText = d.name;
                     item.onclick = () => selectDisease(d);
                     setupContextTrigger(item, 'disease', d);
@@ -570,15 +581,21 @@
             if(confirm("Permanently delete?")) await deleteDoc(doc(db, col, id));
         }
 
-        async function handleReorder(evt, targetCategory) {
-            // SortableJS gives us the new index
-            // In a real app, you would batch update the 'order' field of all items in the list
-            // For now, we can just update the category if dragging between lists
+        async function handleReorder(evt) {
             const itemEl = evt.item;
-            // Note: Implementing full drag-and-drop reorder persistence requires updating indices 
-            // of multiple documents. For this version, we will just support moving categories.
-            
-            // To be fully implemented: Update 'order' field in Firebase
+            const newCategory = evt.to.parentElement.querySelector('.category-header').innerText; // Get new category name
+            const diseaseId = itemEl.dataset.id; // We need to ensure dataset.id is set in renderSidebar
+
+            if (!diseaseId || !newCategory) return;
+
+            // 1. Optimistic Update (Prevent UI jump)
+            const disease = diseases.find(d => d.id === diseaseId);
+            if (disease) disease.category = newCategory;
+
+            // 2. Database Update
+            await updateDoc(doc(db, "diseases", diseaseId), {
+                category: newCategory
+            });
         }
 
         // FAB Listeners
