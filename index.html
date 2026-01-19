@@ -19,7 +19,7 @@
             --bg-body: #000000; --bg-sidebar: #050505; --bg-card: #0a0a0a; --bg-box: #111111; --bg-input: #171717;
             --border-color: #27272a; --text-main: #e2e8f0; --text-muted: #94a3b8;
             --accent-color: #3b82f6; --accent-bg: #172554; --accent-text: #bfdbfe;
-            --header-bg: rgba(0, 0, 0, 0.85); --bg-tab: rgba(30, 30, 30, 0.95); /* Tabs slightly less transparent for stickiness */
+            --header-bg: rgba(0, 0, 0, 0.85); --bg-tab: rgba(30, 30, 30, 0.95);
             
             /* Colored Boxes */
             --box-green-bg: rgba(6, 78, 59, 0.3); --box-green-border: #059669; --box-green-text: #d1fae5;
@@ -89,7 +89,7 @@
         
         /* --- MODERN TABS (Sticky) --- */
         .tabs-wrapper { 
-            position: sticky; top: 0; z-index: 20; /* High Z-index */
+            position: sticky; top: 0; z-index: 20; 
             padding: 0.5rem 0; background-color: var(--bg-body); 
             border-bottom: 1px solid var(--border-color); 
             margin: 0 -2rem 1.5rem -2rem; padding-left: 2rem; padding-right: 2rem; 
@@ -97,7 +97,6 @@
         }
         .tabs { display: flex; overflow-x: auto; gap: 20px; scrollbar-width: none; flex: 1; }
         .tabs::-webkit-scrollbar { display: none; }
-        
         .tab-btn {
             background: none; border: none; padding: 10px 0; cursor: pointer;
             font-weight: 600; color: var(--text-muted); font-size: 0.95rem;
@@ -114,12 +113,12 @@
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         
-        /* Typography in Editor */
+        /* Typography */
         .tab-content h1 { font-size: 2em; margin-bottom: 0.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; color: var(--text-main); }
         .tab-content h2 { font-size: 1.5em; margin-top: 1em; color: var(--accent-text); }
         .tab-content h3 { font-size: 1.25em; margin-top: 1em; color: var(--text-main); border-left: 4px solid var(--accent-color); padding-left: 10px; }
         
-        /* Colored Boxes Classes (Used by Quill) */
+        /* Colored Boxes */
         .box { padding: 1.5rem; border-radius: 0.75rem; margin: 1.5rem 0; border-left: 4px solid; background: var(--bg-box); }
         .box-title { display: block; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.9; }
         .box-green { background: var(--box-green-bg); border-color: var(--box-green-border); color: var(--box-green-text); }
@@ -128,29 +127,31 @@
         .box-purple { background: var(--box-purple-bg); border-color: var(--box-purple-border); color: var(--box-purple-text); }
         .box-yellow { background: var(--box-yellow-bg); border-color: var(--box-yellow-border); color: var(--box-yellow-text); }
 
-        /* --- PRO EDITOR TOOLBAR --- */
+        /* --- PRO EDITOR TOOLBAR (FIXED: WRAPPING) --- */
         #editorWrapper { margin-top: 10px; border-top: 1px solid var(--border-color); position: relative; }
         
         #quill-toolbar {
-            /* STICKY LOGIC: Sticks below tabs (approx 60px height of tabs) */
-            position: sticky; top: 60px; z-index: 15;
+            position: sticky; top: 60px; z-index: 25; /* Higher than tabs */
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-color);
             padding: 8px 10px;
-            display: flex; flex-wrap: nowrap; gap: 8px; align-items: center;
-            overflow-x: auto; white-space: nowrap;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Slight shadow for depth */
-            /* Scrollbar styling */
-            scrollbar-width: thin; scrollbar-color: var(--accent-color) var(--bg-input);
+            /* WRAPPING ENABLED TO FIX DROPDOWN CLIPPING */
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+            overflow: visible; /* Important for dropdowns */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        #quill-toolbar::-webkit-scrollbar { height: 4px; }
-        #quill-toolbar::-webkit-scrollbar-track { background: var(--bg-input); }
-        #quill-toolbar::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 4px; }
 
         /* Dropdown Styling */
         .ql-picker { color: var(--text-main) !important; font-size: 14px !important; font-weight: 500 !important; }
         .ql-picker-label { padding-left: 4px !important; }
-        .ql-picker-options { background-color: var(--bg-card) !important; border: 1px solid var(--border-color) !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5); padding: 5px !important; }
+        /* Dropdown menu positioning */
+        .ql-picker-options { 
+            background-color: var(--bg-card) !important; 
+            border: 1px solid var(--border-color) !important; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+            padding: 5px !important; 
+            z-index: 1000 !important; /* Ensure on top */
+        }
         .ql-picker-item { color: var(--text-muted) !important; padding: 5px !important; }
         .ql-picker-item:hover { color: var(--accent-color) !important; background: var(--bg-input); }
         .ql-picker-item.ql-selected { color: var(--accent-color) !important; font-weight: bold; }
