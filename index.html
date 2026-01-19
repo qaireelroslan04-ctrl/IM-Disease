@@ -162,7 +162,14 @@
         /* Details View */
         #caseDetails { display: none; flex-direction: column; height: 100%; }
         
-        .details-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); }
+        /* Search for .details-header and REPLACE it with this: */
+        .details-header { 
+            padding: 1.5rem 2rem; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+        }
         .cat-badge { font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         .main-title { font-size: 1.8rem; font-weight: 800; margin-top: 5px; color: white; }
 
@@ -290,7 +297,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.0</span>
+            <span class="version-badge">v0.1.1</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -322,8 +329,13 @@
                 
                 <div id="caseDetails">
                     <div class="details-header">
-                        <div id="detailCat" class="cat-badge">CATEGORY</div>
-                        <div id="detailTitle" class="main-title">Disease Name</div>
+                        <div>
+                            <div id="detailCat" class="cat-badge">CATEGORY</div>
+                            <div id="detailTitle" class="main-title">Disease Name</div>
+                        </div>
+                        <button class="icon-btn" onclick="toggleEditMode()" title="Edit Note">
+                            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </button>
                     </div>
                     
                     <div class="tabs-container" id="tabsContainer">
@@ -372,7 +384,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // CONFIG
         const firebaseConfig = {
@@ -395,6 +407,7 @@
         let isAdmin = false;
         let currentModuleId = null;
         let currentDiseaseId = null;
+        let currentTabId = null; // NEW
         let modules = [];
         let diseases = [];
         let categories = []; // Unique list from diseases
@@ -545,6 +558,92 @@
             };
         }
 
+        // --- TAB LOGIC ---
+        async function loadTabs(diseaseId) {
+            const tabsRef = collection(db, "diseases", diseaseId, "tabs");
+            const q = query(tabsRef, orderBy("order", "asc")); // Ensure you have an index or use simple sorting
+            
+            const snap = await onSnapshot(q, (snapshot) => {
+                const tabs = [];
+                snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
+                
+                // If no tabs exist, create default "Notes"
+                if(tabs.length === 0) {
+                    addTab("Notes", true); // Auto-create
+                } else {
+                    // Sort locally if needed
+                    tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
+                    renderTabs(tabs);
+                    
+                    // If no tab selected, select first
+                    if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
+                        switchTab(tabs[0]);
+                    }
+                }
+            });
+        }
+
+        function renderTabs(tabs) {
+            const container = els.tabsContainer;
+            container.innerHTML = "";
+            
+            tabs.forEach(tab => {
+                const btn = document.createElement("div");
+                btn.className = `tab-pill ${tab.id === currentTabId ? 'active' : ''}`;
+                btn.innerText = tab.title;
+                btn.onclick = () => switchTab(tab);
+                // Right click to delete/rename tab (Optional for future)
+                container.appendChild(btn);
+            });
+
+            // Add Tab Button
+            if(isAdmin) {
+                const addBtn = document.createElement("div");
+                addBtn.className = "add-tab-btn";
+                addBtn.innerText = "+";
+                addBtn.onclick = () => promptAddTab();
+                container.appendChild(addBtn);
+            }
+        }
+
+        async function promptAddTab() {
+            const name = prompt("New Tab Name:");
+            if(name) addTab(name);
+        }
+
+        async function addTab(title, isAuto = false) {
+            if(!currentDiseaseId) return;
+            const newOrder = Date.now(); // Simple ordering
+            const docRef = await addDoc(collection(db, "diseases", currentDiseaseId, "tabs"), {
+                title: title,
+                content: "",
+                order: newOrder
+            });
+            if(!isAuto) switchTab({id: docRef.id, title: title, content: ""});
+        }
+
+        async function switchTab(tab) {
+            currentTabId = tab.id;
+            
+            // 1. Update UI
+            const pills = document.querySelectorAll(".tab-pill");
+            pills.forEach(p => p.classList.remove("active"));
+            // Find the one we clicked (simple matching)
+            for(let p of pills) { if(p.innerText === tab.title) p.classList.add("active"); }
+
+            // 2. Load Content into Editor
+            // We need to fetch the latest content in case it changed
+            // But for responsiveness, we use the passed 'tab' object if available from snapshot
+            // Ideally, we fetch the single doc to get 'content' specifically
+            const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
+            
+            const content = docSnap.exists() ? docSnap.data().content : "";
+            
+            document.getElementById('editor').innerHTML = content || '<p>Start writing...</p>';
+            // Reset scroll
+            document.getElementById('editor').scrollTop = 0;
+        }
+
         // --- CORE UI ---
         window.goHome = () => {
             currentModuleId = null;
@@ -581,31 +680,24 @@
 
         function selectDisease(data) {
             currentDiseaseId = data.id;
+            currentTabId = null; // Reset tab
+            
             els.welcomeMsg.style.display = 'none';
             els.caseDetails.style.display = 'flex';
+            
+            // Set Header Info
             els.detailTitle.innerText = data.name;
             els.detailCat.innerText = data.category;
-            els.detailTitle.innerText = data.name;
-            els.detailCat.innerText = data.category;
+            document.getElementById('note-title').value = data.name; // Sync title input
             
-            // NEW: Load Content into Editor
-            document.getElementById('note-title').value = data.name;
-            document.getElementById('editor').innerHTML = data.content || '<p>Start writing...</p>';
+            // Update Sidebar UI
+            renderSidebar();
             
-            // Reset Edit Mode
-            toggleEditMode(false);
-            
-            renderSidebar(); 
-            
-            // Render Tabs
-            els.tabsContainer.innerHTML = `
-                <div class="tab-pill active">Notes</div>
-                ${isAdmin ? '<div class="add-tab-btn" onclick="alert(\'Add Tab logic coming soon\')">+</div>' : ''}
-            `;
+            // Load Tabs (This handles the content loading now)
+            loadTabs(data.id);
 
-            // FIX: Auto-close sidebar on mobile
             if(window.innerWidth <= 768) {
-                toggleSidebar(false); // Close
+                toggleSidebar(false);
             }
         }
 
@@ -804,16 +896,15 @@
         });
 
         // Save to Firebase
-        async function saveNoteContent(id) {
+        async function saveNoteContent(diseaseId) {
+            if(!currentTabId) return; // Don't save if no tab selected
+            
             const content = document.getElementById('editor').innerHTML;
-            const title = document.getElementById('note-title').value;
             
-            // Update UI immediately
-            document.getElementById('detailTitle').innerText = title; 
-            
-            await updateDoc(doc(db, "diseases", id), { 
-                content: content, 
-                name: title 
+            // Save to the specific TAB document
+            await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
+                content: content,
+                lastUpdated: new Date()
             });
         }
 
