@@ -109,7 +109,15 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        .content-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2.5rem; min-height: 500px; }
+        /* Search for .content-card and replace with this: */
+        .content-card { 
+            background: transparent; /* Removes dark grey background */
+            border: none;            /* Removes border */
+            border-radius: 0; 
+            padding: 10px 0;         /* Removes huge padding */
+            min-height: 500px; 
+            position: relative; 
+        }
         .tab-content { display: none; line-height: 1.8; color: var(--text-main); font-size: 1.05rem; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         
@@ -150,12 +158,20 @@
         }
 
         /* FAB Button */
+        /* Ensure this class exists in your CSS */
         .fab-btn {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: var(--accent-color); color: white;
-            border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            font-size: 24px; cursor: pointer; z-index: 100;
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px;
+            width: 60px; height: 60px; 
+            border-radius: 50%;
+            background: var(--accent-color); 
+            color: white;
+            border: none; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 28px; 
+            cursor: pointer; 
+            z-index: 9999; /* Force on top */
             display: flex; align-items: center; justify-content: center;
             transition: transform 0.2s;
         }
@@ -609,11 +625,21 @@
             });
         }
 
+        // Search for this block and replace it:
         els.btnAddModule.addEventListener('click', async () => {
-            const title = prompt("Section Title:");
+            const title = prompt("Section Title (e.g. Pediatrics):");
             if(!title) return;
+            
+            // ADDED: Prompts for Subtitle and Icon
+            const subtitle = prompt("Subtitle (e.g. Drug Doses & Cases):") || "";
+            const icon = prompt("Icon Emoji (e.g. 👶):") || "📁";
+            
             await addDoc(collection(db, "app_modules"), {
-                title: title, subtitle: "", icon: "📁", order: modules.length + 1, createdAt: new Date()
+                title: title, 
+                subtitle: subtitle, 
+                icon: icon, 
+                order: modules.length + 1, 
+                createdAt: new Date()
             });
         });
 
