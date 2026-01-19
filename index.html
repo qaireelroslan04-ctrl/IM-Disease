@@ -31,6 +31,16 @@
         .header-left { display: flex; align-items: center; gap: 0.75rem; }
         .logo-icon { font-size: 1.2rem; cursor: pointer; }
         .app-title { font-size: 1.1rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer;}
+        .version-badge {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-left: 8px;
+            padding: 2px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+        }
         
         /* Admin Badge */
         .admin-badge { 
@@ -173,8 +183,51 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: var(--text-muted);
         }
 
-        /* Content Area */
-        .content-area { flex: 1; overflow-y: auto; padding: 2rem; position: relative; }
+        /* --- EDITOR & CONTENT --- */
+        .content-area { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+        
+        /* Editor Container */
+        .editor-container { 
+            max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem; 
+            flex: 1; display: flex; flex-direction: column; 
+        }
+
+        /* Note Title */
+        .note-title-input {
+            width: 100%; background: transparent; border: none; color: var(--text-main);
+            font-size: 2rem; font-weight: 800; font-family: -apple-system, sans-serif; 
+            margin-bottom: 16px; line-height: 1.2; outline: none;
+        }
+
+        /* The Actual Editor */
+        .note-content { 
+            font-size: 1rem; line-height: 1.6; color: var(--text-main); min-height: 60vh; 
+            outline: none;
+        }
+        .note-content:empty:before { content: 'Start writing...'; color: var(--text-muted); opacity: 0.5; }
+
+        /* Floating Toolbar (Sticky) */
+        .editor-toolbar {
+            display: none; align-items: center; gap: 4px; padding: 8px 16px;
+            background: var(--bg-card); border-bottom: 1px solid var(--border-color);
+            overflow-x: auto; white-space: nowrap; position: sticky; top: 0; z-index: 30;
+        }
+        .editor-toolbar.visible { display: flex; }
+
+        .fmt-btn {
+            background: transparent; border: 1px solid transparent; color: var(--text-muted);
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem;
+        }
+        .fmt-btn:hover { background: var(--bg-input); color: var(--text-main); }
+        .fmt-btn.active { background: rgba(59, 130, 246, 0.2); color: var(--accent-color); border-color: var(--accent-color); }
+
+        /* Search Results (in Sidebar) */
+        .search-result-item { padding: 10px 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+        .search-result-item:hover { background: var(--bg-input); }
+        .result-path { font-size: 0.65rem; color: var(--accent-color); opacity: 0.8; }
+        .result-title { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .result-snippet { font-size: 0.75rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        mark { background: rgba(59, 130, 246, 0.3); color: white; padding: 0 2px; border-radius: 2px; }
 
         /* --- CONTEXT MENU --- */
         #contextMenu {
@@ -237,6 +290,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
+            <span class="version-badge">v0.1.0</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -275,7 +329,27 @@
                     <div class="tabs-container" id="tabsContainer">
                         </div>
 
+                    <div id="editor-toolbar" class="editor-toolbar">
+                        <button class="fmt-btn" onclick="fmt('bold')"><b>B</b></button>
+                        <button class="fmt-btn" onclick="fmt('italic')"><i>I</i></button>
+                        <button class="fmt-btn" onclick="fmt('underline')"><u>U</u></button>
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+                        <button class="fmt-btn" onclick="fmt('formatBlock', 'H2')">H2</button>
+                        <button class="fmt-btn" onclick="fmt('formatBlock', 'H3')">H3</button>
+                        <button class="fmt-btn" onclick="fmt('insertUnorderedList')">• List</button>
+                        <button class="fmt-btn" onclick="fmt('insertOrderedList')">1. List</button>
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+                        <button class="fmt-btn" onclick="insertTable()">Table</button>
+                        <button class="fmt-btn" onclick="createLink()">🔗</button>
+                        <button class="fmt-btn" onclick="cleanNotebookLMText()">✨ Clean</button>
+                    </div>
+
                     <div class="content-area" id="contentArea">
+                        <div class="editor-container">
+                            <input type="text" id="note-title" class="note-title-input" placeholder="Title" readonly>
+                            <div id="editor" class="note-content" contenteditable="false"></div>
+                        </div>
+                    </div>
                         </div>
                 </div>
             </main>
@@ -324,6 +398,8 @@
         let modules = [];
         let diseases = [];
         let categories = []; // Unique list from diseases
+        let isEditMode = false;
+        let saveTimeout;
 
         const els = {
             homeView: document.getElementById('home-view'),
@@ -509,6 +585,16 @@
             els.caseDetails.style.display = 'flex';
             els.detailTitle.innerText = data.name;
             els.detailCat.innerText = data.category;
+            els.detailTitle.innerText = data.name;
+            els.detailCat.innerText = data.category;
+            
+            // NEW: Load Content into Editor
+            document.getElementById('note-title').value = data.name;
+            document.getElementById('editor').innerHTML = data.content || '<p>Start writing...</p>';
+            
+            // Reset Edit Mode
+            toggleEditMode(false);
+            
             renderSidebar(); 
             
             // Render Tabs
@@ -670,6 +756,106 @@
 
         // FAB Listeners
         els.homeFab.onclick = () => openModal('add_module');
+
+        // --- EDITOR LOGIC ---
+        
+        // Toggle Edit Mode (Call this from your existing Edit/Context menu)
+        window.toggleEditMode = (forceState) => {
+            isEditMode = forceState !== undefined ? forceState : !isEditMode;
+            const editor = document.getElementById('editor');
+            const toolbar = document.getElementById('editor-toolbar');
+            const titleInput = document.getElementById('note-title');
+            
+            if(isEditMode) {
+                editor.contentEditable = true;
+                titleInput.removeAttribute('readonly');
+                toolbar.classList.add('visible');
+            } else {
+                editor.contentEditable = false;
+                titleInput.setAttribute('readonly', true);
+                toolbar.classList.remove('visible');
+                // Trigger save on exit
+                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+            }
+        };
+
+        // Basic Formatting
+        window.fmt = (cmd, val) => {
+            document.execCommand(cmd, false, val);
+            document.getElementById('editor').focus();
+        };
+
+        // Insert Table (Fixed Logic)
+        window.insertTable = () => {
+            const html = `
+                <table style="width:100%; border-collapse: collapse; margin: 10px 0; border: 1px solid var(--border-color);">
+                    <tr><td style="border: 1px solid var(--border-color); padding: 8px;">Header 1</td><td style="border: 1px solid var(--border-color); padding: 8px;">Header 2</td></tr>
+                    <tr><td style="border: 1px solid var(--border-color); padding: 8px;">Cell 1</td><td style="border: 1px solid var(--border-color); padding: 8px;">Cell 2</td></tr>
+                </table><p><br></p>`;
+            fmt('insertHTML', html);
+        };
+
+        // Auto-Save Logic
+        document.getElementById('editor').addEventListener('input', () => {
+             if(currentDiseaseId) {
+                 clearTimeout(saveTimeout);
+                 saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 1000);
+             }
+        });
+
+        // Save to Firebase
+        async function saveNoteContent(id) {
+            const content = document.getElementById('editor').innerHTML;
+            const title = document.getElementById('note-title').value;
+            
+            // Update UI immediately
+            document.getElementById('detailTitle').innerText = title; 
+            
+            await updateDoc(doc(db, "diseases", id), { 
+                content: content, 
+                name: title 
+            });
+        }
+
+        // --- SEARCH LOGIC (From IM Notes Pro) ---
+        document.getElementById('searchSidebar').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const container = document.getElementById('sidebarContent');
+            
+            if(query.length < 2) {
+                renderSidebar(); // Reset to normal view
+                return;
+            }
+
+            // Advanced Search
+            const results = diseases.filter(d => {
+                const titleMatch = d.name.toLowerCase().includes(query);
+                // Strip HTML for content search
+                const div = document.createElement("div");
+                div.innerHTML = d.content || "";
+                const contentText = div.innerText.toLowerCase();
+                const contentMatch = contentText.includes(query);
+                
+                return titleMatch || contentMatch;
+            });
+
+            container.innerHTML = '';
+            results.forEach(d => {
+                const div = document.createElement("div");
+                div.className = "search-result-item";
+                
+                // Highlight Logic
+                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                const titleHtml = d.name.replace(regex, "<mark>$1</mark>");
+                
+                div.innerHTML = `
+                    <div class="result-path">${d.category}</div>
+                    <div class="result-title">${titleHtml}</div>
+                `;
+                div.onclick = () => selectDisease(d);
+                container.appendChild(div);
+            });
+        });
 
     </script>
 </body>
