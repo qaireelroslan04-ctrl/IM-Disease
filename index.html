@@ -182,10 +182,17 @@
         }
         .box-delete-btn:hover { color: #ef4444; }
 
+        /* Re-enable text selection and fix cursor behavior */
+        .box-body, .box-header-title { 
+            user-select: text !important; 
+            cursor: text; 
+            -webkit-user-select: text !important;
+        }
+
         .box-body { 
             padding: 15px; color: var(--text-main); font-size: 1rem; line-height: 1.6; 
             outline: none; min-height: 50px; 
-            white-space: pre-wrap; /* critical for cursor placement */
+            white-space: normal; /* Fixes line wrapping issues */
             word-break: break-word;
         }
         /* Allow rich text elements inside box body */
@@ -883,7 +890,7 @@
             const body = document.createElement('div');
             body.className = 'box-body';
             body.contentEditable = true;
-            // Use a div for the content wrapper to allow nested blocks/lists easily
+            // Use a div for the content wrapper (Better for arrow keys/Enter)
             body.innerHTML = '<div>Write here...</div>';
             body.addEventListener('keydown', handleEditorKeydown);
 
@@ -1125,20 +1132,6 @@
             }
             // Pass to smart handler
             handleEditorKeydown(e);
-        });
-
-        // FIX: Ensure clicking anywhere in the box focuses the text
-        document.addEventListener('click', (e) => {
-            if(e.target.classList.contains('box-body')) {
-                // If clicked on empty padding of box, move cursor to end
-                if(e.target === document.activeElement) return;
-                const range = document.createRange();
-                const sel = window.getSelection();
-                range.selectNodeContents(e.target);
-                range.collapse(false); // to end
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
         });
 
         // Sync Toolbar Active States
