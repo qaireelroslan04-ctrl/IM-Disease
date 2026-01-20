@@ -122,7 +122,7 @@
         #note-title { display: none; } 
 
         .content-area { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
-        .editor-container { max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem; flex: 1; display: flex; flex-direction: column; }
+        .editor-container { max-width: 1000px; margin: 0 auto; width: 100%; padding: 2rem 5%; flex: 1; display: flex; flex-direction: column; }
         
         /* Toolbar */
         .editor-toolbar {
@@ -249,12 +249,35 @@
             border-radius: 0 8px 8px 0; border: 1px solid var(--border-color); border-left: none; 
             background: var(--bg-card); box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
             align-items: center; justify-content: center; transition: left 0.3s ease; z-index: 45;
+            cursor: pointer;
         }
-        .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
-        .sidebar-toggle.mobile-open { left: 80%; border-radius: 8px 0 0 8px; border-right: none; border-left: 1px solid var(--border-color); margin-left: -1px; }
-        .sidebar-toggle div { transition: transform 0.3s; transform: rotate(180deg); }
-        .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
+        /* PC Closed: Sit on left edge, arrow points right */
+        .sidebar-toggle.collapsed { left: 0; }
+        .sidebar-toggle.collapsed div { transform: rotate(180deg); }
 
+        /* FAB Options (Click to open, not hover) */
+        .editor-fab-container {
+            position: fixed; bottom: 30px; right: 30px;
+            display: none; flex-direction: column-reverse; align-items: center; gap: 10px; z-index: 100;
+        }
+        .editor-fab-container.visible { display: flex; }
+        
+        .fab-main {
+            width: 56px; height: 56px; border-radius: 50%; background: var(--accent-color); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s;
+        }
+        .fab-main:active { transform: scale(0.9); }
+        
+        .fab-opt {
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; opacity: 0; transform: translateY(20px);
+            transition: all 0.2s; pointer-events: none;
+        }
+        
+        /* Show options only when active class is added by JS */
+        .editor-fab-container.active .fab-opt { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        
         /* Image Resizing (Google Docs Style) */
         .img-wrapper {
             display: inline-block; position: relative; margin: 10px 0;
@@ -275,8 +298,11 @@
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
             /* Mobile Toggle: Fixed to left edge */
-            .sidebar-toggle { left: -1px; transform: none; }
-            .sidebar-toggle.mobile-open { left: 80%; }
+            .sidebar-toggle { left: -1px !important; transform: none; border-radius: 0 8px 8px 0; border-left: none; border-right: 1px solid var(--border-color); }
+            /* When open, push to 80% */
+            .sidebar-toggle.mobile-open { left: 80% !important; border-radius: 8px 0 0 8px; border-right: none; border-left: 1px solid var(--border-color); margin-left: -1px; }
+            .sidebar-toggle div { transition: transform 0.3s; }
+            .sidebar-toggle.mobile-open div { transform: rotate(180deg); }
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
         }
@@ -288,7 +314,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.2.1</span>
+            <span class="version-badge">v0.2.2</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -590,12 +616,20 @@
         window.toggleSidebar = (forceState) => {
             const isOpen = els.sidebar.style.transform === 'translateX(0px)';
             const shouldOpen = forceState !== undefined ? forceState : !isOpen;
+            
             els.sidebar.style.transform = shouldOpen ? 'translateX(0px)' : '';
             document.getElementById('backdrop').style.display = shouldOpen ? 'block' : 'none';
+            
             const btn = document.getElementById('sidebarToggle');
             if(btn) {
                 if(shouldOpen) btn.classList.add('mobile-open');
                 else btn.classList.remove('mobile-open');
+            }
+
+            // Fix: Hide FAB on mobile when sidebar is open to prevent collision
+            if(window.innerWidth <= 768) {
+                const fab = document.getElementById('editorFab');
+                if(fab) fab.style.display = shouldOpen ? 'none' : (isEditMode ? 'flex' : 'none');
             }
         };
 
@@ -688,10 +722,27 @@
         function renderTabs(tabs) {
             const container = els.tabsContainer;
             container.innerHTML = "";
+            
+            // Create a wrapper specifically for sortable items
+            const sortList = document.createElement("div");
+            sortList.style.display = "flex";
+            sortList.style.gap = "10px";
+            sortList.style.overflowX = "auto";
+            
+            // Enable Sortable ONLY on the wrapper
+            if(isAdmin) {
+                new Sortable(sortList, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: (evt) => handleTabReorder(evt)
+                });
+            }
+
             tabs.forEach(tab => {
                 const btn = document.createElement("div");
                 btn.className = `tab-pill ${tab.id === currentTabId ? 'active' : ''}`;
                 btn.innerText = tab.title;
+                btn.dataset.id = tab.id; 
                 btn.onclick = () => switchTab(tab);
                 if(isAdmin) {
                     btn.oncontextmenu = (e) => {
@@ -702,21 +753,17 @@
                         ]);
                     };
                 }
-                
-                // 1. Enable Sortable on the container
-                if(isAdmin) {
-                    new Sortable(container, {
-                        animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        onEnd: (evt) => handleTabReorder(evt)
-                    });
-                }
-                container.appendChild(btn);
+                sortList.appendChild(btn);
             });
+            
+            container.appendChild(sortList);
+
+            // Add Button is OUTSIDE the sortable list
             if(isAdmin) {
                 const addBtn = document.createElement("div");
                 addBtn.className = "add-tab-btn";
                 addBtn.innerText = "+";
+                addBtn.style.marginLeft = "10px";
                 addBtn.onclick = () => promptAddTab();
                 container.appendChild(addBtn);
             }
@@ -832,7 +879,7 @@
             const body = document.createElement('div');
             body.className = 'box-body';
             body.contentEditable = true;
-            body.innerHTML = '<ul><li>Write points here...</li></ul>';
+            body.innerHTML = '<p>Write here...</p>';
             body.addEventListener('keydown', handleEditorKeydown);
 
             box.appendChild(header);
@@ -891,6 +938,18 @@
 
         // --- NEW: Smart Editor Logic ---
         function handleEditorKeydown(e) {
+
+            // Image Deletion Logic
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                const selectedImg = document.querySelector('.img-wrapper.selected');
+                if (selectedImg) {
+                    e.preventDefault();
+                    selectedImg.remove();
+                    if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+                    return; // Stop further processing
+                }
+            }
+            
             const sel = window.getSelection();
             if (!sel.rangeCount) return;
             const node = sel.anchorNode;
@@ -1202,6 +1261,18 @@
         document.addEventListener('click', (e) => {
             if(!e.target.closest('#userAvatar') && !e.target.closest('#profileMenu')) {
                 document.getElementById('profileMenu').style.display = 'none';
+            }
+        });
+
+        // Toggle FAB options on click
+        document.querySelector('.fab-main').onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('editorFab').classList.toggle('active');
+        };
+        // Close FAB when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#editorFab')) {
+                document.getElementById('editorFab').classList.remove('active');
             }
         });
 
