@@ -270,7 +270,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.8</span>
+            <span class="version-badge">v0.1.9</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -407,6 +407,9 @@
         let isEditMode = false;
         let saveTimeout;
         let isCreatingTab = false;
+        
+        // ADD THIS LINE BELOW:
+        let tabsUnsubscribe = null;
 
         const els = {
             homeView: document.getElementById('home-view'),
@@ -614,33 +617,39 @@
         }
 
         // --- TAB LOGIC ---
-        // FIX: Prevent multiple default tabs from spawning
+        // FIX: Clean up previous listeners to prevent "Double Click" and "Ghost Updates"
         async function loadTabs(diseaseId) {
+            // 1. Unsubscribe from the previous disease's tabs (if listening)
+            if (tabsUnsubscribe) {
+                tabsUnsubscribe();
+                tabsUnsubscribe = null;
+            }
+
             const tabsRef = collection(db, "diseases", diseaseId, "tabs");
             const q = query(tabsRef, orderBy("order", "asc"));
             
-            onSnapshot(q, (snapshot) => {
+            // 2. Start new listener and save the unsubscribe function
+            tabsUnsubscribe = onSnapshot(q, (snapshot) => {
                 const tabs = [];
                 snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
                 
+                // 3. LOGIC CHANGE: Allow 0 tabs (Don't auto-create "Notes")
                 if(tabs.length === 0) {
-                    // Only create if not already creating
-                    if (!isCreatingTab) {
-                        isCreatingTab = true;
-                        addTab("Notes", true).finally(() => { isCreatingTab = false; });
-                    }
+                    currentTabId = null;
+                    renderTabs([]); // Render just the + button
+                    document.getElementById('editor').innerHTML = '<div class="placeholder-text">Click <b>+</b> above to add a Tab</div>';
                 } else {
                     tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
                     renderTabs(tabs);
                     
-                    // If current tab is gone (deleted), switch to first available
+                    // If current tab was deleted, switch to the first available one
                     if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
                         switchTab(tabs[0]);
                     }
                 }
             });
         }
-
+        
         function renderTabs(tabs) {
             const container = els.tabsContainer;
             container.innerHTML = "";
