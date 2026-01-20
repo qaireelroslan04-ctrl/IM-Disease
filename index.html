@@ -27,7 +27,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* --- HEADER --- */
-        header { background-color: var(--header-bg); padding: 0 1rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 50; flex-shrink: 0; transition: all 0.3s ease; }
+        header { background-color: var(--header-bg); padding: 0 1rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 70; flex-shrink: 0; transition: all 0.3s ease; }
         .header-left { display: flex; align-items: center; gap: 0.75rem; }
         .logo-icon { font-size: 1.2rem; cursor: pointer; }
         .app-title { font-size: 1.1rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer; transition: color 0.3s; }
@@ -245,20 +245,38 @@
 
         /* Toggle Button */
         .sidebar-toggle { 
-            display: flex; position: fixed; left: -1px; bottom: 80px; width: 32px; height: 42px;
+            display: flex; position: fixed; left: 300px; bottom: 80px; width: 32px; height: 42px;
             border-radius: 0 8px 8px 0; border: 1px solid var(--border-color); border-left: none; 
             background: var(--bg-card); box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            align-items: center; justify-content: center; transition: left 0.3s ease;
+            align-items: center; justify-content: center; transition: left 0.3s ease; z-index: 45;
         }
         .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
         .sidebar-toggle.mobile-open { left: 80%; border-radius: 8px 0 0 8px; border-right: none; border-left: 1px solid var(--border-color); margin-left: -1px; }
         .sidebar-toggle div { transition: transform 0.3s; transform: rotate(180deg); }
         .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
 
+        /* Image Resizing (Google Docs Style) */
+        .img-wrapper {
+            display: inline-block; position: relative; margin: 10px 0;
+            max-width: 100%; border: 2px solid transparent; transition: border 0.2s;
+        }
+        .img-wrapper:hover { border-color: rgba(59, 130, 246, 0.5); }
+        .img-wrapper.selected { border-color: var(--accent-color); }
+        
+        .img-resizer {
+            width: 12px; height: 12px; background: var(--accent-color); border: 2px solid white;
+            position: absolute; bottom: -6px; right: -6px; cursor: nwse-resize; border-radius: 50%;
+            display: none; z-index: 10;
+        }
+        .img-wrapper.selected .img-resizer { display: block; }
+        .img-wrapper img { display: block; max-width: 100%; pointer-events: none; /* Prevents native drag */ }
+
         @media (max-width: 768px) {
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
-            .sidebar-toggle.collapsed { transform: none; } /* Mobile doesn't rotate container */
+            /* Mobile Toggle: Fixed to left edge */
+            .sidebar-toggle { left: -1px; transform: none; }
+            .sidebar-toggle.mobile-open { left: 80%; }
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
         }
@@ -270,7 +288,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.2.0</span>
+            <span class="version-badge">v0.2.1</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -1084,7 +1102,7 @@
 
         els.homeFab.onclick = () => openModal('add_module');
 
-        // --- IMAGE SUPPORT ---
+        // --- IMAGE SUPPORT (Google Docs Style) ---
         window.triggerImage = () => document.getElementById('imgUpload').click();
 
         window.handleImageUpload = (input) => {
@@ -1118,23 +1136,61 @@
             const insideBox = anchor && (anchor.nodeType === 3 ? anchor.parentNode : anchor).closest('.box-body');
             
             if (insideBox) {
-                // Resizeable Image Wrapper
-                const imgHtml = `
-                    <div style="text-align:center; margin:10px 0;">
-                        <img src="${src}" style="max-width:100%; border-radius:8px; cursor:nwse-resize; box-shadow:0 4px 12px rgba(0,0,0,0.3);" onclick="resizeImage(this)">
+                // Insert Image Wrapper with Resizer Handle
+                const html = `
+                    <div class="img-wrapper" style="width: 50%;">
+                        <img src="${src}" style="width: 100%;">
+                        <div class="img-resizer" onmousedown="initResize(event)"></div>
                     </div><p><br></p>`;
-                document.execCommand('insertHTML', false, imgHtml);
+                document.execCommand('insertHTML', false, html);
                 if(currentDiseaseId) saveNoteContent(currentDiseaseId);
             } else {
                 alert("Click inside a box to insert image.");
             }
         }
 
-        // Simple Resize Prompt (Mobile Friendly)
-        window.resizeImage = (img) => {
-            if(!isEditMode) return;
-            const newWidth = prompt("Enter image width (e.g. 100%, 300px):", img.style.width || "100%");
-            if(newWidth) img.style.width = newWidth;
+        // Click to Select Image
+        document.getElementById('editor').addEventListener('click', (e) => {
+            // Remove selection from all others
+            document.querySelectorAll('.img-wrapper.selected').forEach(el => el.classList.remove('selected'));
+            
+            const wrapper = e.target.closest('.img-wrapper');
+            if (wrapper) {
+                wrapper.classList.add('selected');
+                // Prevent editing text while resizing image
+                wrapper.contentEditable = false; 
+            }
+        });
+
+        // Drag to Resize Logic
+        window.initResize = (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Stop editor from losing focus
+            
+            const resizer = e.target;
+            const wrapper = resizer.closest('.img-wrapper');
+            const startX = e.clientX;
+            const startWidth = wrapper.offsetWidth;
+            const parentWidth = wrapper.parentElement.offsetWidth;
+
+            const doDrag = (dragEvent) => {
+                const newWidth = startWidth + (dragEvent.clientX - startX);
+                // Convert to percentage for responsiveness
+                const newPercent = (newWidth / parentWidth) * 100;
+                if (newPercent > 10 && newPercent <= 100) {
+                    wrapper.style.width = newPercent + '%';
+                }
+            };
+
+            const stopDrag = () => {
+                document.documentElement.removeEventListener('mousemove', doDrag);
+                document.documentElement.removeEventListener('mouseup', stopDrag);
+                wrapper.contentEditable = true; // Re-enable editing
+                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+            };
+
+            document.documentElement.addEventListener('mousemove', doDrag);
+            document.documentElement.addEventListener('mouseup', stopDrag);
         };
 
         // --- DATA MANAGEMENT ---
