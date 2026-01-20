@@ -118,7 +118,7 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: var(--text-muted);
         }
 
-        /* --- ALPHA 0.1.6: PRO EDITOR --- */
+        /* --- ALPHA 0.1.7+: PRO EDITOR --- */
         #note-title { display: none; } 
 
         .content-area { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
@@ -174,11 +174,13 @@
         }
         
         .box-delete-btn {
-            background: none; border: none; color: inherit; cursor: pointer;
-            opacity: 0.6; font-size: 1.2rem; line-height: 1; padding: 0 5px;
+            background: none; border: none; 
+            color: rgba(255,255,255,0.7); cursor: pointer;
+            font-size: 1.5rem; line-height: 1; padding: 0 8px;
             display: none; /* Hidden by default, shown in Edit Mode */
+            transition: color 0.2s;
         }
-        .box-delete-btn:hover { opacity: 1; color: white; }
+        .box-delete-btn:hover { color: #ef4444; }
 
         .box-body { 
             padding: 15px; color: var(--text-main); font-size: 1rem; line-height: 1.6; 
@@ -268,7 +270,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.7</span>
+            <span class="version-badge">v0.1.8</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -435,14 +437,14 @@
         onAuthStateChanged(auth, (user) => {
             if (user && user.email === ADMIN_EMAIL) {
                 isAdmin = true;
-                document.getElementById('adminBadge').style.display = 'block';
-                els.homeFab.style.display = 'flex'; 
+                if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'block';
+                if(els.homeFab) els.homeFab.style.display = 'flex'; 
             } else {
                 isAdmin = false;
-                document.getElementById('adminBadge').style.display = 'none';
-                els.homeFab.style.display = 'none';
+                if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'none';
+                if(els.homeFab) els.homeFab.style.display = 'none';
             }
-            if(user) document.getElementById('userAvatar').src = user.photoURL;
+            if(user && document.getElementById('userAvatar')) document.getElementById('userAvatar').src = user.photoURL;
             loadModules();
         });
 
@@ -477,6 +479,7 @@
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
             if(window.innerWidth <= 768) toggleSidebar(true);
+            els.sidebarContent.innerHTML = '<div style="padding:20px;text-align:center;color:#666">Loading...</div>';
             loadDiseases();
         }
 
@@ -1045,22 +1048,6 @@
         }
 
         els.homeFab.onclick = () => openModal('add_module');
-
-        // --- NEW HELPER: Handles the Header Scroll Effect ---
-        function handleScroll(e) {
-            const mainTitle = document.querySelector('.app-title');
-            const originalTitle = "IM Disease";
-            // Get the title from the hidden input field
-            const targetTitle = document.getElementById('note-title').value; 
-
-            if (e.target.scrollTop > 60) {
-                mainTitle.innerText = targetTitle; 
-                mainTitle.style.color = "white";
-            } else {
-                mainTitle.innerText = originalTitle; 
-                mainTitle.style.color = "var(--accent-color)";
-            }
-        }
     </script>
 </body>
 </html>
