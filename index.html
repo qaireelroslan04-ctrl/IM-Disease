@@ -118,8 +118,8 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: var(--text-muted);
         }
 
-        /* --- ALPHA 0.1.3: CLINICAL BOX SYSTEM --- */
-        #note-title { display: none; } /* Hide Redundant Title */
+        /* --- ALPHA 0.1.6: PRO EDITOR --- */
+        #note-title { display: none; } 
 
         .content-area { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
         .editor-container { max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem; flex: 1; display: flex; flex-direction: column; }
@@ -137,9 +137,22 @@
             cursor: pointer; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem;
         }
         .fmt-btn:hover { background: var(--bg-input); color: var(--text-main); }
-        
+        .fmt-btn.active { background-color: rgba(59, 130, 246, 0.2); color: var(--accent-color); border-color: var(--accent-color); }
+
+        .font-size-input {
+            width: 50px; background: var(--bg-input); border: 1px solid var(--border-color);
+            color: white; border-radius: 4px; text-align: center; font-size: 0.8rem; padding: 2px;
+        }
+
+        /* Edit Toggle Active State */
+        .icon-btn.active {
+            color: var(--accent-color) !important;
+            filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5)); transform: scale(1.1);
+        }
+
         .note-content { font-size: 1rem; line-height: 1.6; color: var(--text-main); min-height: 60vh; outline: none; }
-        .note-content:empty:before { content: 'Start writing...'; color: var(--text-muted); opacity: 0.5; }
+        
+        .placeholder-text { padding: 40px; text-align: center; color: var(--text-muted); font-style: italic; pointer-events: none; }
 
         /* Clinical Boxes */
         .clinical-box {
@@ -255,7 +268,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.5</span>
+            <span class="version-badge">v0.1.6</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -291,7 +304,7 @@
                             <div id="detailCat" class="cat-badge">CATEGORY</div>
                             <div id="detailTitle" class="main-title">Disease Name</div>
                         </div>
-                        <button class="icon-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" onclick="toggleEditMode()" title="Edit Note">
+                        <button id="editToggleBtn" class="icon-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" onclick="toggleEditMode()" title="Edit Note">
                             <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
                     </div>
@@ -299,20 +312,34 @@
                     <div class="tabs-container" id="tabsContainer"></div>
 
                     <div id="editor-toolbar" class="editor-toolbar">
-                        <button class="fmt-btn" onclick="fmt('bold')"><b>B</b></button>
-                        <button class="fmt-btn" onclick="fmt('italic')"><i>I</i></button>
-                        <button class="fmt-btn" onclick="fmt('underline')"><u>U</u></button>
-                        <select onchange="fmt('fontSize', this.value)" class="fmt-btn" style="width:auto; background:var(--bg-input);">
-                            <option value="3">Size</option>
-                            <option value="2">Small</option>
-                            <option value="5">Big</option>
-                        </select>
+                        <button class="fmt-btn" onclick="fmt('undo')" title="Undo">↩</button>
+                        <button class="fmt-btn" onclick="fmt('redo')" title="Redo">↪</button>
                         <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-                        <button class="fmt-btn" onclick="fmt('insertUnorderedList')">• List</button>
-                        <button class="fmt-btn" onclick="fmt('insertOrderedList')">1. List</button>
+                        
+                        <input type="number" id="fontSizeInp" class="font-size-input" value="3" min="1" max="7" onchange="fmt('fontSize', this.value)" title="Font Size (1-7)">
+                        
                         <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-                        <button class="fmt-btn" onclick="insertVideo()">▶ Video</button>
-                        <button class="fmt-btn" onclick="cleanLaTeX()">✨ Clean</button>
+                        
+                        <button class="fmt-btn" id="btnBold" onclick="fmt('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+                        <button class="fmt-btn" id="btnItalic" onclick="fmt('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+                        <button class="fmt-btn" id="btnUnderline" onclick="fmt('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button class="fmt-btn" id="btnStrike" onclick="fmt('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                        
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+                        
+                        <button class="fmt-btn" id="btnAlignLeft" onclick="fmt('justifyLeft')" title="Left">⇤</button>
+                        <button class="fmt-btn" id="btnAlignCenter" onclick="fmt('justifyCenter')" title="Center">⇹</button>
+                        <button class="fmt-btn" id="btnAlignRight" onclick="fmt('justifyRight')" title="Right">⇥</button>
+
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+
+                        <button class="fmt-btn" id="btnUL" onclick="fmt('insertUnorderedList')" title="Bullet List">• List</button>
+                        <button class="fmt-btn" id="btnOL" onclick="fmt('insertOrderedList')" title="Numbered List">1. List</button>
+                        
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+                        
+                        <button class="fmt-btn" onclick="insertVideo()" title="YouTube">▶</button>
+                        <button class="fmt-btn" onclick="cleanLaTeX()" title="Clean LaTeX">✨</button>
                     </div>
 
                     <div class="content-area" id="contentArea">
@@ -530,11 +557,22 @@
             }
         };
 
-        function selectDisease(data) {
-            // FIX: Save previous state before switching
-            if(currentDiseaseId && currentTabId) {
-                saveNoteContent(currentDiseaseId);
+        function handleScroll(e) {
+            const mainTitle = document.querySelector('.app-title');
+            const originalTitle = "IM Disease";
+            const targetTitle = document.getElementById('note-title').value; 
+
+            if (e.target.scrollTop > 60) {
+                mainTitle.innerText = targetTitle; 
+                mainTitle.style.color = "white";
+            } else {
+                mainTitle.innerText = originalTitle; 
+                mainTitle.style.color = "var(--accent-color)";
             }
+        }
+
+        function selectDisease(data) {
+            if(currentDiseaseId && currentTabId) saveNoteContent(currentDiseaseId);
 
             currentDiseaseId = data.id;
             currentTabId = null;
@@ -551,26 +589,11 @@
 
             if(window.innerWidth <= 768) toggleSidebar(false);
 
-            const mainTitle = document.querySelector('.app-title');
-            const originalTitle = "IM Disease";
-            mainTitle.innerText = originalTitle;
-            mainTitle.style.color = "var(--accent-color)";
-
-            const oldContent = els.contentArea;
-            const newContent = oldContent.cloneNode(false);
-            while(oldContent.firstChild) newContent.appendChild(oldContent.firstChild);
-            oldContent.parentNode.replaceChild(newContent, oldContent);
-            els.contentArea = newContent;
-
-            els.contentArea.onscroll = (e) => {
-                if (e.target.scrollTop > 60) {
-                    mainTitle.innerText = data.name; 
-                    mainTitle.style.color = "white";
-                } else {
-                    mainTitle.innerText = originalTitle; 
-                    mainTitle.style.color = "var(--accent-color)";
-                }
-            };
+            const contentArea = document.getElementById('contentArea');
+            contentArea.removeEventListener('scroll', handleScroll);
+            document.querySelector('.app-title').innerText = "IM Disease";
+            document.querySelector('.app-title').style.color = "var(--accent-color)";
+            contentArea.addEventListener('scroll', handleScroll);
         }
 
         // --- TAB LOGIC ---
@@ -644,10 +667,7 @@
         }
 
         async function switchTab(tab) {
-            // FIX: Save previous tab before switching
-            if(currentDiseaseId && currentTabId) {
-                await saveNoteContent(currentDiseaseId);
-            }
+            if(currentDiseaseId && currentTabId) await saveNoteContent(currentDiseaseId);
 
             currentTabId = tab.id;
             const pills = document.querySelectorAll(".tab-pill");
@@ -657,7 +677,8 @@
             const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
             const content = docSnap.exists() ? docSnap.data().content : "";
             
-            document.getElementById('editor').innerHTML = content || '<div style="padding:20px;text-align:center;color:gray;">Tap Edit ✎ then + to add a Clinical Box</div>';
+            document.getElementById('editor').innerHTML = content || 
+                '<div class="placeholder-text">Tap Edit <span style="font-style:normal">✎</span> then <b>+</b> to add a Clinical Box</div>';
             
             attachBoxListeners(); 
             toggleEditMode(); toggleEditMode(); 
@@ -669,13 +690,16 @@
             isEditMode = !isEditMode;
             const toolbar = document.getElementById('editor-toolbar');
             const fab = document.getElementById('editorFab'); 
+            const toggleBtn = document.getElementById('editToggleBtn');
             
             if(isEditMode) {
                 toolbar.classList.add('visible');
                 fab.classList.add('visible'); 
+                toggleBtn.classList.add('active');
             } else {
                 toolbar.classList.remove('visible');
                 fab.classList.remove('visible'); 
+                toggleBtn.classList.remove('active');
                 if(currentDiseaseId) saveNoteContent(currentDiseaseId);
             }
 
@@ -689,6 +713,10 @@
         };
 
         window.insertBox = (color) => {
+            const editor = document.getElementById('editor');
+            const placeholder = editor.querySelector('.placeholder-text');
+            if(placeholder) placeholder.remove();
+
             const title = prompt("Box Title (e.g. GOLDEN QUESTIONS):");
             if (!title) return;
 
@@ -721,6 +749,7 @@
             body.className = 'box-body';
             body.contentEditable = true;
             body.innerHTML = '<ul><li>Write points here...</li></ul>';
+            body.addEventListener('keydown', handleEditorKeydown);
 
             box.appendChild(header);
             box.appendChild(body);
@@ -728,7 +757,6 @@
             document.getElementById('editor').appendChild(box);
             body.focus();
             
-            // CRITICAL FIX: Save immediately so the box persists
             if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
 
@@ -741,7 +769,7 @@
                 document.execCommand(cmd, false, val);
                 insideBox.focus();
             } else {
-                alert("Please click inside a Box Body to format text.");
+                if(cmd !== 'undo' && cmd !== 'redo') alert("Please click inside a Box Body to format text.");
             }
         };
 
@@ -774,17 +802,80 @@
             html = html.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\$/g, ''); 
             html = html.replace(/_\{?(\d+)\}?/g, (m, d) => `<sub>${d}</sub>`).replace(/\^\{?(\d+)\}?/g, (m, d) => `<sup>${d}</sup>`);
             editor.innerHTML = html;
-            // Force re-render to attach listeners (or just trigger save for now)
             if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
 
+        // --- NEW: Smart Editor Logic ---
+        function handleEditorKeydown(e) {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const node = sel.anchorNode;
+            
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                document.execCommand(e.shiftKey ? 'outdent' : 'indent');
+            }
+
+            if (e.key === ' ' && node.nodeType === 3) {
+                const text = node.textContent;
+                const offset = sel.anchorOffset;
+                if (text.slice(0, offset).trim() === '1.') {
+                    e.preventDefault();
+                    const range = sel.getRangeAt(0);
+                    range.setStart(node, 0); range.setEnd(node, offset); range.deleteContents();
+                    document.execCommand('insertOrderedList');
+                }
+                else if (text.slice(0, offset).trim() === '-') {
+                    e.preventDefault();
+                    const range = sel.getRangeAt(0);
+                    range.setStart(node, 0); range.setEnd(node, offset); range.deleteContents();
+                    document.execCommand('insertUnorderedList');
+                }
+            }
+
+            if (e.ctrlKey && e.shiftKey) {
+                if (e.key === ',' || e.key === '<') { 
+                    e.preventDefault();
+                    let current = parseInt(document.queryCommandValue('fontSize')) || 3;
+                    if(current > 1) fmt('fontSize', current - 1);
+                }
+                if (e.key === '.' || e.key === '>') { 
+                    e.preventDefault();
+                    let current = parseInt(document.queryCommandValue('fontSize')) || 3;
+                    if(current < 7) fmt('fontSize', current + 1);
+                }
+            }
+        }
+
         document.getElementById('editor').addEventListener('keydown', function(e) {
+            // General Hotkeys
             if (e.ctrlKey || e.metaKey) {
                 const key = e.key.toLowerCase();
                 if(key === 'b') { e.preventDefault(); fmt('bold'); }
                 if(key === 'i') { e.preventDefault(); fmt('italic'); }
                 if(key === 'u') { e.preventDefault(); fmt('underline'); }
             }
+            // Pass to smart handler
+            handleEditorKeydown(e);
+        });
+
+        // Sync Toolbar Active States
+        document.addEventListener('selectionchange', () => {
+            if (!isEditMode) return;
+            const stateMap = {
+                'bold': 'btnBold', 'italic': 'btnItalic', 'underline': 'btnUnderline', 'strikeThrough': 'btnStrike',
+                'insertUnorderedList': 'btnUL', 'insertOrderedList': 'btnOL',
+                'justifyLeft': 'btnAlignLeft', 'justifyCenter': 'btnAlignCenter', 'justifyRight': 'btnAlignRight'
+            };
+            for (const [cmd, btnId] of Object.entries(stateMap)) {
+                const isActive = document.queryCommandState(cmd);
+                const btn = document.getElementById(btnId);
+                if(btn) {
+                    if(isActive) btn.classList.add('active'); else btn.classList.remove('active');
+                }
+            }
+            const size = document.queryCommandValue('fontSize');
+            if(size) document.getElementById('fontSizeInp').value = size;
         });
 
         document.getElementById('editor').addEventListener('input', () => {
@@ -797,13 +888,9 @@
         async function saveNoteContent(diseaseId) {
             if(!currentTabId) return;
             const content = document.getElementById('editor').innerHTML;
-            
-            // Save Tab Content
             await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
                 content: content, lastUpdated: new Date() 
             });
-
-            // Index for Search
             const plainText = document.getElementById('editor').innerText;
             await updateDoc(doc(db, "diseases", diseaseId), {
                 searchIndex: plainText.substring(0, 1000).toLowerCase() 
