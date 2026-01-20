@@ -268,7 +268,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.6</span>
+            <span class="version-badge">v0.1.67</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -404,6 +404,7 @@
         let categories = []; 
         let isEditMode = false;
         let saveTimeout;
+        let isCreatingTab = false;
 
         const els = {
             homeView: document.getElementById('home-view'),
@@ -572,11 +573,15 @@
         }
 
         function selectDisease(data) {
-            if(currentDiseaseId && currentTabId) saveNoteContent(currentDiseaseId);
+            // 1. Save previous state before switching
+            if(currentDiseaseId && currentTabId) {
+                saveNoteContent(currentDiseaseId);
+            }
 
             currentDiseaseId = data.id;
             currentTabId = null;
             
+            // 2. UI Updates
             els.welcomeMsg.style.display = 'none';
             els.caseDetails.style.display = 'flex';
             
@@ -587,16 +592,26 @@
             renderSidebar();
             loadTabs(data.id);
 
-            if(window.innerWidth <= 768) toggleSidebar(false);
+            if(window.innerWidth <= 768) {
+                toggleSidebar(false);
+            }
 
+            // 3. FIX: Clean Scroll Logic (No DOM Destruction)
             const contentArea = document.getElementById('contentArea');
+            
+            // Remove the old listener (safe even if not attached yet)
             contentArea.removeEventListener('scroll', handleScroll);
+            
+            // Reset Header immediately
             document.querySelector('.app-title').innerText = "IM Disease";
             document.querySelector('.app-title').style.color = "var(--accent-color)";
+            
+            // Add the new listener
             contentArea.addEventListener('scroll', handleScroll);
         }
 
         // --- TAB LOGIC ---
+        // FIX: Prevent multiple default tabs from spawning
         async function loadTabs(diseaseId) {
             const tabsRef = collection(db, "diseases", diseaseId, "tabs");
             const q = query(tabsRef, orderBy("order", "asc"));
@@ -604,11 +619,18 @@
             onSnapshot(q, (snapshot) => {
                 const tabs = [];
                 snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
+                
                 if(tabs.length === 0) {
-                    addTab("Notes", true); 
+                    // Only create if not already creating
+                    if (!isCreatingTab) {
+                        isCreatingTab = true;
+                        addTab("Notes", true).finally(() => { isCreatingTab = false; });
+                    }
                 } else {
                     tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
                     renderTabs(tabs);
+                    
+                    // If current tab is gone (deleted), switch to first available
                     if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
                         switchTab(tabs[0]);
                     }
@@ -663,7 +685,13 @@
         }
 
         async function deleteTab(tab) {
-            if(confirm(`Delete tab "${tab.title}"?`)) await deleteDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
+            if(confirm(`Delete tab "${tab.title}"?`)) {
+                // CRITICAL FIX: Set currentTabId to null so the 'switchTab' logic 
+                // knows NOT to try and save this deleted tab.
+                if (currentTabId === tab.id) currentTabId = null;
+                
+                await deleteDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
+            }
         }
 
         async function switchTab(tab) {
@@ -1017,6 +1045,22 @@
         }
 
         els.homeFab.onclick = () => openModal('add_module');
+
+        // --- NEW HELPER: Handles the Header Scroll Effect ---
+        function handleScroll(e) {
+            const mainTitle = document.querySelector('.app-title');
+            const originalTitle = "IM Disease";
+            // Get the title from the hidden input field
+            const targetTitle = document.getElementById('note-title').value; 
+
+            if (e.target.scrollTop > 60) {
+                mainTitle.innerText = targetTitle; 
+                mainTitle.style.color = "white";
+            } else {
+                mainTitle.innerText = originalTitle; 
+                mainTitle.style.color = "var(--accent-color)";
+            }
+        }
     </script>
 </body>
 </html>
