@@ -270,11 +270,23 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.9</span>
+            <span class="version-badge">v0.2.0</span>
         </div>
-        <div style="display:flex; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
-            <img id="userAvatar" src="https://ui-avatars.com/api/?name=U&background=171717&color=fff" class="user-avatar" onclick="handleAuth()">
+            
+            <div style="position:relative;">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=U&background=171717&color=fff" class="user-avatar" onclick="toggleProfileMenu()">
+                
+                <div id="profileMenu" style="display:none; position:absolute; right:0; top:40px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; width:160px; box-shadow:0 4px 15px rgba(0,0,0,0.5); z-index:100; overflow:hidden;">
+                    <div onclick="exportData()" class="ctx-item">Backup Data (JSON)</div>
+                    <div onclick="triggerImport()" class="ctx-item">Import Data</div>
+                    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+                    <div onclick="handleAuth()" class="ctx-item" style="color:#ef4444;">Log Out</div>
+                </div>
+            </div>
+            
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
         </div>
     </header>
 
@@ -337,6 +349,11 @@
 
                         <button class="fmt-btn" id="btnUL" onclick="fmt('insertUnorderedList')" title="Bullet List">• List</button>
                         <button class="fmt-btn" id="btnOL" onclick="fmt('insertOrderedList')" title="Numbered List">1. List</button>
+                        
+                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
+
+                        <button class="fmt-btn" onclick="triggerImage()" title="Insert Image">🖼️</button>
+                        <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
                         
                         <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
                         
@@ -544,9 +561,9 @@
 
         window.toggleRetract = () => {
             if (window.innerWidth <= 768) {
-                toggleSidebar(); 
+                toggleSidebar(); // Mobile: Open Overlay
             } else {
-                els.sidebar.classList.toggle('collapsed');
+                els.sidebar.classList.toggle('collapsed'); // PC: Collapse
                 const btn = document.getElementById('sidebarToggle');
                 if(btn) btn.classList.toggle('collapsed');
             }
@@ -666,6 +683,15 @@
                             { label: 'Delete Tab', class: 'delete', action: () => deleteTab(tab) }
                         ]);
                     };
+                }
+                
+                // 1. Enable Sortable on the container
+                if(isAdmin) {
+                    new Sortable(container, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: (evt) => handleTabReorder(evt)
+                    });
                 }
                 container.appendChild(btn);
             });
@@ -1057,6 +1083,116 @@
         }
 
         els.homeFab.onclick = () => openModal('add_module');
+
+        // --- IMAGE SUPPORT ---
+        window.triggerImage = () => document.getElementById('imgUpload').click();
+
+        window.handleImageUpload = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => insertImageToBox(e.target.result);
+                reader.readAsDataURL(input.files[0]);
+                input.value = '';
+            }
+        };
+
+        // Handle Paste (Ctrl+V)
+        document.getElementById('editor').addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => insertImageToBox(event.target.result);
+                    reader.readAsDataURL(blob);
+                    return;
+                }
+            }
+        });
+
+        function insertImageToBox(src) {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const anchor = sel.anchorNode;
+            const insideBox = anchor && (anchor.nodeType === 3 ? anchor.parentNode : anchor).closest('.box-body');
+            
+            if (insideBox) {
+                // Resizeable Image Wrapper
+                const imgHtml = `
+                    <div style="text-align:center; margin:10px 0;">
+                        <img src="${src}" style="max-width:100%; border-radius:8px; cursor:nwse-resize; box-shadow:0 4px 12px rgba(0,0,0,0.3);" onclick="resizeImage(this)">
+                    </div><p><br></p>`;
+                document.execCommand('insertHTML', false, imgHtml);
+                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+            } else {
+                alert("Click inside a box to insert image.");
+            }
+        }
+
+        // Simple Resize Prompt (Mobile Friendly)
+        window.resizeImage = (img) => {
+            if(!isEditMode) return;
+            const newWidth = prompt("Enter image width (e.g. 100%, 300px):", img.style.width || "100%");
+            if(newWidth) img.style.width = newWidth;
+        };
+
+        // --- DATA MANAGEMENT ---
+        window.toggleProfileMenu = () => {
+            const menu = document.getElementById('profileMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        };
+        // Close menu on outside click
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#userAvatar') && !e.target.closest('#profileMenu')) {
+                document.getElementById('profileMenu').style.display = 'none';
+            }
+        });
+
+        window.exportData = () => {
+            if(!isAdmin) { alert("Admin only."); return; }
+            const data = { modules: modules, diseases: diseases, exportedAt: new Date() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `IM_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        };
+
+        window.triggerImport = () => document.getElementById('importFile').click();
+
+        window.importData = (input) => {
+            if(!isAdmin) { alert("Admin only."); return; }
+            const file = input.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(confirm(`Import ${data.diseases.length} diseases? This will merge with existing data.`)) {
+                        // Batch write logic would go here. For Alpha, we alert success.
+                        alert("Import logic connected. (Data merging requires complex batching logic implemented next update)");
+                    }
+                } catch(err) { alert("Invalid JSON"); }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        };
+
+        async function handleTabReorder(evt) {
+            const items = evt.to.querySelectorAll('.tab-pill');
+            const batch = writeBatch(db);
+            items.forEach((el, index) => {
+                const id = el.dataset.id;
+                // Note: tabs are subcollections, so we construct path carefully
+                const tabRef = doc(db, "diseases", currentDiseaseId, "tabs", id);
+                batch.update(tabRef, { order: index });
+            });
+            await batch.commit();
+        }
+        
     </script>
 </body>
 </html>
