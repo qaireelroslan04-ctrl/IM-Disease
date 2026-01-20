@@ -184,7 +184,9 @@
 
         .box-body { 
             padding: 15px; color: var(--text-main); font-size: 1rem; line-height: 1.6; 
-            outline: none; min-height: 50px;
+            outline: none; min-height: 50px; 
+            white-space: pre-wrap; /* critical for cursor placement */
+            word-break: break-word;
         }
         /* Allow rich text elements inside box body */
         .box-body p { margin-bottom: 10px; }
@@ -314,7 +316,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">Alpha 0.2.3</span>
+            <span class="version-badge">Alpha 0.2.4</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -881,7 +883,8 @@
             const body = document.createElement('div');
             body.className = 'box-body';
             body.contentEditable = true;
-            body.innerHTML = '<p>Write here...</p>';
+            // Use a div for the content wrapper to allow nested blocks/lists easily
+            body.innerHTML = '<div>Write here...</div>';
             body.addEventListener('keydown', handleEditorKeydown);
 
             box.appendChild(header);
@@ -1041,7 +1044,6 @@
         
         // --- NEW: Smart Editor Logic ---
         function handleEditorKeydown(e) {
-
             // Image Deletion Logic
             if (e.key === 'Backspace' || e.key === 'Delete') {
                 const selectedImg = document.querySelector('.img-wrapper.selected');
@@ -1049,36 +1051,56 @@
                     e.preventDefault();
                     selectedImg.remove();
                     if(currentDiseaseId) saveNoteContent(currentDiseaseId);
-                    return; // Stop further processing
+                    return; 
                 }
+            }
+
+            // Fix Enter Key: Default to div instead of p for better nesting
+            if (e.key === 'Enter' && !e.shiftKey) {
+                document.execCommand('defaultParagraphSeparator', false, 'div');
             }
             
             const sel = window.getSelection();
             if (!sel.rangeCount) return;
             const node = sel.anchorNode;
-            
+
+            // Indent / Outdent
             if (e.key === 'Tab') {
                 e.preventDefault();
                 document.execCommand(e.shiftKey ? 'outdent' : 'indent');
             }
 
+            // Auto-List Logic (Space trigger)
             if (e.key === ' ' && node.nodeType === 3) {
                 const text = node.textContent;
                 const offset = sel.anchorOffset;
-                if (text.slice(0, offset).trim() === '1.') {
+                
+                // Get text strictly before cursor
+                const textBefore = text.slice(0, offset); 
+                
+                if (textBefore.trim() === '1.') {
                     e.preventDefault();
+                    // Clean up the trigger text
                     const range = sel.getRangeAt(0);
-                    range.setStart(node, 0); range.setEnd(node, offset); range.deleteContents();
+                    // Find start of the "1."
+                    const startPos = textBefore.lastIndexOf('1.');
+                    range.setStart(node, startPos);
+                    range.setEnd(node, offset);
+                    range.deleteContents();
                     document.execCommand('insertOrderedList');
                 }
-                else if (text.slice(0, offset).trim() === '-') {
+                else if (textBefore.trim() === '-') {
                     e.preventDefault();
                     const range = sel.getRangeAt(0);
-                    range.setStart(node, 0); range.setEnd(node, offset); range.deleteContents();
+                    const startPos = textBefore.lastIndexOf('-');
+                    range.setStart(node, startPos);
+                    range.setEnd(node, offset);
+                    range.deleteContents();
                     document.execCommand('insertUnorderedList');
                 }
             }
 
+            // Font Size Hotkeys
             if (e.ctrlKey && e.shiftKey) {
                 if (e.key === ',' || e.key === '<') { 
                     e.preventDefault();
@@ -1103,6 +1125,20 @@
             }
             // Pass to smart handler
             handleEditorKeydown(e);
+        });
+
+        // FIX: Ensure clicking anywhere in the box focuses the text
+        document.addEventListener('click', (e) => {
+            if(e.target.classList.contains('box-body')) {
+                // If clicked on empty padding of box, move cursor to end
+                if(e.target === document.activeElement) return;
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(e.target);
+                range.collapse(false); // to end
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
         });
 
         // Sync Toolbar Active States
