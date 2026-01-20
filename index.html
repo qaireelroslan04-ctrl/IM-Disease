@@ -27,19 +27,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* --- HEADER --- */
-        header { background-color: var(--header-bg); padding: 0 1rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 50; flex-shrink: 0; }
+        header { background-color: var(--header-bg); padding: 0 1rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 50; flex-shrink: 0; transition: all 0.3s ease; }
         .header-left { display: flex; align-items: center; gap: 0.75rem; }
         .logo-icon { font-size: 1.2rem; cursor: pointer; }
-        .app-title { font-size: 1.1rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer;}
+        .app-title { font-size: 1.1rem; font-weight: 800; color: var(--accent-color); white-space: nowrap; cursor: pointer; transition: color 0.3s; }
         .version-badge {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            margin-left: 8px;
-            padding: 2px 6px;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            opacity: 0.7;
-            letter-spacing: 0.5px;
+            font-size: 0.65rem; color: var(--text-muted); margin-left: 8px; padding: 2px 6px;
+            border: 1px solid var(--border-color); border-radius: 12px; opacity: 0.7; letter-spacing: 0.5px;
         }
         
         /* Admin Badge */
@@ -47,8 +41,6 @@
             background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 4px; 
             font-size: 0.6rem; font-weight: 800; letter-spacing: 1px; display: none; margin-right: 10px;
         }
-
-        /* User Avatar */
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-color); cursor: pointer; }
         
         /* --- LAYOUT --- */
@@ -71,23 +63,19 @@
         .menu-label { font-weight: 700; font-size: 1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* --- SIDEBAR (Retractable) --- */
+        /* --- SIDEBAR --- */
         aside { 
             width: var(--sidebar-width); background: var(--bg-sidebar); 
             border-right: 1px solid var(--border-color); display: flex; flex-direction: column; 
             transition: width 0.3s ease, transform 0.3s ease; z-index: 40;
-            position: relative; 
-            overflow: hidden; 
-            white-space: nowrap; /* Prevents text wrapping during collapse */
+            position: relative; overflow: hidden; white-space: nowrap;
         }
         aside.collapsed { width: 0; border: none; }
         
         .sidebar-header { padding: 1rem; border-bottom: 1px solid var(--border-color); }
         .search-input { width: 100%; padding: 0.6rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 0.5rem; outline: none; }
-        
         .sidebar-content { flex: 1; overflow-y: auto; padding-bottom: 2rem; }
         
-        /* Categories & Items */
         .category-group { margin-bottom: 10px; }
         .category-header { 
             font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; 
@@ -101,79 +89,19 @@
         .disease-item.active { background: var(--bg-input); border-left-color: var(--accent-color); font-weight: 600; }
         .sortable-ghost { opacity: 0.4; background: var(--bg-input); }
 
-       /* Sidebar Toggle Btn (Floating) */
-        .sidebar-toggle {
-            position: absolute; bottom: 20px; left: 300px; /* Matches --sidebar-width */
-            width: 24px; height: 40px; 
-            background: var(--bg-card); border: 1px solid var(--border-color); border-left: none;
-            border-radius: 0 8px 8px 0; color: var(--text-muted);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            z-index: 45; transition: left 0.3s ease, transform 0.3s;
-        }
-        .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
-        
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
-            aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
-            
-            /* FIX: Stable Toggle Button Styling */
-            .sidebar-toggle { 
-                display: flex; 
-                position: fixed; /* Fixed to viewport */
-                left: 0; 
-                bottom: 80px; 
-                width: 32px; height: 42px;
-                
-                /* Shape: Flat against left wall, Rounded on right */
-                border-radius: 0 8px 8px 0;
-                border: 1px solid var(--border-color);
-                border-left: none; /* No border on the flat side */
-                background: var(--bg-card);
-                box-shadow: 2px 0 8px rgba(0,0,0,0.3);
-                
-                align-items: center; justify-content: center;
-                transition: left 0.3s ease; /* Animate position only */
-            }
-            
-            /* When Sidebar is Open */
-            .sidebar-toggle.mobile-open {
-                left: 80%; /* Move to right edge of sidebar */
-            }
-
-            /* Rotate ONLY the arrow text, not the box */
-            .sidebar-toggle div {
-                transition: transform 0.3s;
-                transform: rotate(180deg); /* Default: Points Right (>) for "Open Me" */
-            }
-            .sidebar-toggle.mobile-open div {
-                transform: rotate(0deg); /* Open: Points Left (<) for "Close Me" */
-            }
-
-            .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
-            .backdrop.open { display: block; }
-        }
-
         /* --- MAIN CONTENT --- */
         main { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; }
-        
         .welcome-msg { margin: auto; text-align: center; color: var(--text-muted); }
-        
-        /* Details View */
         #caseDetails { display: none; flex-direction: column; height: 100%; }
         
-        /* Search for .details-header and REPLACE it with this: */
         .details-header { 
-            padding: 1.5rem 2rem; 
-            border-bottom: 1px solid var(--border-color); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-start;
+            padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); 
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
         .cat-badge { font-size: 0.7rem; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         .main-title { font-size: 1.8rem; font-weight: 800; margin-top: 5px; color: white; }
 
-        /* Modern Tabs (Pills) */
+        /* Tabs */
         .tabs-container { 
             padding: 10px 2rem; border-bottom: 1px solid var(--border-color); 
             display: flex; gap: 10px; overflow-x: auto; background: var(--bg-body);
@@ -190,129 +118,116 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: var(--text-muted);
         }
 
-        /* --- EDITOR & CONTENT --- */
+        /* --- ALPHA 0.1.3: CLINICAL BOX SYSTEM --- */
+        #note-title { display: none; } /* Hide Redundant Title */
+
         .content-area { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+        .editor-container { max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem; flex: 1; display: flex; flex-direction: column; }
         
-        /* Editor Container */
-        .editor-container { 
-            max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem; 
-            flex: 1; display: flex; flex-direction: column; 
-        }
-
-        /* Note Title */
-        .note-title-input {
-            width: 100%; background: transparent; border: none; color: var(--text-main);
-            font-size: 2rem; font-weight: 800; font-family: -apple-system, sans-serif; 
-            margin-bottom: 16px; line-height: 1.2; outline: none;
-        }
-
-        /* The Actual Editor */
-        .note-content { 
-            font-size: 1rem; line-height: 1.6; color: var(--text-main); min-height: 60vh; 
-            outline: none;
-        }
-        .note-content:empty:before { content: 'Start writing...'; color: var(--text-muted); opacity: 0.5; }
-
-        /* Floating Toolbar (Sticky) */
+        /* Toolbar */
         .editor-toolbar {
             display: none; align-items: center; gap: 4px; padding: 8px 16px;
             background: var(--bg-card); border-bottom: 1px solid var(--border-color);
             overflow-x: auto; white-space: nowrap; position: sticky; top: 0; z-index: 30;
         }
         .editor-toolbar.visible { display: flex; }
-
+        
         .fmt-btn {
             background: transparent; border: 1px solid transparent; color: var(--text-muted);
             cursor: pointer; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem;
         }
         .fmt-btn:hover { background: var(--bg-input); color: var(--text-main); }
-        .fmt-btn.active { background: rgba(59, 130, 246, 0.2); color: var(--accent-color); border-color: var(--accent-color); }
+        
+        .note-content { font-size: 1rem; line-height: 1.6; color: var(--text-main); min-height: 60vh; outline: none; }
+        .note-content:empty:before { content: 'Start writing...'; color: var(--text-muted); opacity: 0.5; }
 
-        /* Search Results (in Sidebar) */
+        /* Clinical Boxes */
+        .clinical-box {
+            border-radius: 12px; margin-bottom: 20px; background: var(--bg-card);
+            border: 2px solid transparent; overflow: hidden; transition: all 0.2s ease;
+        }
+        .clinical-box:focus-within { box-shadow: 0 0 15px rgba(0,0,0,0.5); transform: translateY(-2px); }
+        
+        .box-green  { border-color: #10b981; } .box-green .box-header { background: #064e3b; color: #10b981; }
+        .box-blue   { border-color: #3b82f6; } .box-blue .box-header { background: #1e3a8a; color: #60a5fa; }
+        .box-red    { border-color: #ef4444; } .box-red .box-header { background: #7f1d1d; color: #fca5a5; }
+        .box-orange { border-color: #f59e0b; } .box-orange .box-header { background: #78350f; color: #fcd34d; }
+
+        .box-header { padding: 10px 15px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .box-body { padding: 15px; color: var(--text-main); font-size: 1rem; line-height: 1.6; outline: none; }
+        .box-body ul { padding-left: 20px; margin: 0; }
+        .box-body li { margin-bottom: 6px; }
+
+        /* FAB for Boxes */
+        .editor-fab-container {
+            position: fixed; bottom: 30px; right: 30px;
+            display: none; flex-direction: column-reverse; align-items: center; gap: 10px; z-index: 100;
+        }
+        .editor-fab-container.visible { display: flex; }
+        .fab-main {
+            width: 56px; height: 56px; border-radius: 50%; background: var(--accent-color); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s;
+        }
+        .fab-main:active { transform: scale(0.9); }
+        .fab-opt {
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; opacity: 0; transform: translateY(20px);
+            transition: all 0.2s; pointer-events: none;
+        }
+        .editor-fab-container:hover .fab-opt { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        /* Search Results */
         .search-result-item { padding: 10px 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
         .search-result-item:hover { background: var(--bg-input); }
-        .result-path { font-size: 0.65rem; color: var(--accent-color); opacity: 0.8; }
         .result-title { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
-        .result-snippet { font-size: 0.75rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         mark { background: rgba(59, 130, 246, 0.3); color: white; padding: 0 2px; border-radius: 2px; }
 
-        /* --- CONTEXT MENU --- */
+        /* --- CONTEXT MENU & MODALS --- */
         #contextMenu {
             position: fixed; display: none; background: var(--bg-card); 
             border: 1px solid var(--border-color); border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999;
-            min-width: 150px; overflow: hidden; padding: 5px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; min-width: 150px; padding: 5px;
         }
-        .ctx-item { 
-            padding: 8px 12px; cursor: pointer; font-size: 0.9rem; color: var(--text-main); 
-            border-radius: 4px; display: flex; align-items: center; gap: 8px;
-        }
+        .ctx-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; color: var(--text-main); border-radius: 4px; }
         .ctx-item:hover { background: var(--accent-color); color: white; }
         .ctx-item.delete:hover { background: #dc2626; }
 
-        /* --- UNIVERSAL MODAL (Form) --- */
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
-            display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px);
-        }
-        .modal-box {
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            width: 90%; max-width: 400px; border-radius: 12px; padding: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-box { background: var(--bg-card); border: 1px solid var(--border-color); width: 90%; max-width: 400px; border-radius: 12px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: var(--text-main); }
-        .form-group { margin-bottom: 15px; }
-        .form-label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
-        .form-input, .form-select { 
-            width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); 
-            border-radius: 6px; color: white; outline: none; font-size: 0.95rem;
-        }
-        .form-input:focus { border-color: var(--accent-color); }
+        .form-input { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; color: white; outline: none; margin-bottom: 10px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
         .btn-primary { background: var(--accent-color); color: white; }
         .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
 
-        /* FAB */
-        .fab {
+        /* FAB Home */
+        .fab-home {
             position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
             background: var(--accent-color); border-radius: 50%; color: white;
             display: none; align-items: center; justify-content: center; font-size: 24px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; z-index: 80;
         }
 
-        /* Mobile Responsive */
+        /* Toggle Button */
+        .sidebar-toggle { 
+            display: flex; position: fixed; left: -1px; bottom: 80px; width: 32px; height: 42px;
+            border-radius: 0 8px 8px 0; border: 1px solid var(--border-color); border-left: none; 
+            background: var(--bg-card); box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            align-items: center; justify-content: center; transition: left 0.3s ease;
+        }
+        .sidebar-toggle.collapsed { left: 0; transform: rotate(180deg); }
+        .sidebar-toggle.mobile-open { left: 80%; border-radius: 8px 0 0 8px; border-right: none; border-left: 1px solid var(--border-color); margin-left: -1px; }
+        .sidebar-toggle div { transition: transform 0.3s; transform: rotate(180deg); }
+        .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
+
         @media (max-width: 768px) {
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
-            aside.collapsed .sidebar-toggle { display: none; } /* Hide toggle on mobile, use header btn */
+            .sidebar-toggle.collapsed { transform: none; } /* Mobile doesn't rotate container */
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
-        }
-
-        /* --- NEW: SCROLL & BOXES --- */
-        /* Hide the redundant input title in editor */
-        #note-title { display: none; }
-
-        /* Colored Info Box Style */
-        .info-box {
-            background-color: rgba(59, 130, 246, 0.1); 
-            border-left: 4px solid #3b82f6;
-            border-radius: 4px;
-            margin: 10px 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        .box-header {
-            background-color: rgba(59, 130, 246, 0.2);
-            padding: 8px 12px;
-            font-weight: 700;
-            color: var(--text-main);
-            font-size: 0.9rem;
-        }
-        .box-content {
-            padding: 10px 12px;
-            color: var(--text-main);
         }
     </style>
 </head>
@@ -322,7 +237,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.2</span>
+            <span class="version-badge">v0.1.3</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -335,7 +250,7 @@
         <div id="home-view">
             <h2>Select Section</h2>
             <div id="homeList" class="menu-list"></div>
-            <div id="homeFab" class="fab">+</div>
+            <div id="homeFab" class="fab-home">+</div>
         </div>
 
         <div id="app-view" style="display:none; width:100%; height:100%;">
@@ -358,39 +273,28 @@
                             <div id="detailCat" class="cat-badge">CATEGORY</div>
                             <div id="detailTitle" class="main-title">Disease Name</div>
                         </div>
-                        <button class="icon-btn" onclick="toggleEditMode()" title="Edit Note">
+                        <button class="icon-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" onclick="toggleEditMode()" title="Edit Note">
                             <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
                     </div>
                     
-                    <div class="tabs-container" id="tabsContainer">
-                        </div>
+                    <div class="tabs-container" id="tabsContainer"></div>
 
                     <div id="editor-toolbar" class="editor-toolbar">
-                        <button class="fmt-btn" onclick="fmt('bold')" title="Bold"><b>B</b></button>
-                        <button class="fmt-btn" onclick="fmt('italic')" title="Italic"><i>I</i></button>
-                        <button class="fmt-btn" onclick="fmt('underline')" title="Underline"><u>U</u></button>
-                        
-                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-                        
-                        <select onchange="fmt('fontSize', this.value)" class="fmt-btn" style="width:auto;">
-                            <option value="3">Normal</option>
+                        <button class="fmt-btn" onclick="fmt('bold')"><b>B</b></button>
+                        <button class="fmt-btn" onclick="fmt('italic')"><i>I</i></button>
+                        <button class="fmt-btn" onclick="fmt('underline')"><u>U</u></button>
+                        <select onchange="fmt('fontSize', this.value)" class="fmt-btn" style="width:auto; background:var(--bg-input);">
+                            <option value="3">Size</option>
                             <option value="2">Small</option>
                             <option value="5">Big</option>
-                            <option value="7">Huge</option>
                         </select>
-
                         <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-
                         <button class="fmt-btn" onclick="fmt('insertUnorderedList')">• List</button>
                         <button class="fmt-btn" onclick="fmt('insertOrderedList')">1. List</button>
-                        
                         <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-                        
-                        <button class="fmt-btn" onclick="insertColoredBox()" title="Info Box">📦 Box</button>
-                        <button class="fmt-btn" onclick="insertVideo()" title="YouTube">▶</button>
-                        <button class="fmt-btn" onclick="createLink()" title="Link">🔗</button>
-                        <button class="fmt-btn" onclick="cleanLaTeX()" title="Clean LaTeX">✨ Clean</button>
+                        <button class="fmt-btn" onclick="insertVideo()">▶ Video</button>
+                        <button class="fmt-btn" onclick="cleanLaTeX()">✨ Clean</button>
                     </div>
 
                     <div class="content-area" id="contentArea">
@@ -399,7 +303,14 @@
                             <div id="editor" class="note-content" contenteditable="false"></div>
                         </div>
                     </div>
-                        </div>
+
+                    <div id="editorFab" class="editor-fab-container">
+                        <div class="fab-main">+</div>
+                        <div class="fab-opt" style="background:#10b981;" onclick="insertBox('green')"></div>
+                        <div class="fab-opt" style="background:#3b82f6;" onclick="insertBox('blue')"></div>
+                        <div class="fab-opt" style="background:#ef4444;" onclick="insertBox('red')"></div>
+                        <div class="fab-opt" style="background:#f59e0b;" onclick="insertBox('orange')"></div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -408,9 +319,7 @@
     <div id="universalModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title" id="modalTitle">Edit Item</div>
-            
             <div id="modalForm"></div>
-
             <div class="modal-actions">
                 <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
                 <button class="btn btn-primary" id="modalSaveBtn">Save</button>
@@ -444,10 +353,10 @@
         let isAdmin = false;
         let currentModuleId = null;
         let currentDiseaseId = null;
-        let currentTabId = null; // NEW
+        let currentTabId = null;
         let modules = [];
         let diseases = [];
-        let categories = []; // Unique list from diseases
+        let categories = []; 
         let isEditMode = false;
         let saveTimeout;
 
@@ -462,12 +371,13 @@
             modalTitle: document.getElementById('modalTitle'),
             modalForm: document.getElementById('modalForm'),
             modalSaveBtn: document.getElementById('modalSaveBtn'),
-            homeFab: document.getElementById('homeFab'),
+            homeFab: document.querySelector('.fab-home'),
             caseDetails: document.getElementById('caseDetails'),
             detailTitle: document.getElementById('detailTitle'),
             detailCat: document.getElementById('detailCat'),
             tabsContainer: document.getElementById('tabsContainer'),
-            welcomeMsg: document.getElementById('welcomeMsg')
+            welcomeMsg: document.getElementById('welcomeMsg'),
+            contentArea: document.getElementById('contentArea')
         };
 
         // --- AUTH ---
@@ -480,7 +390,7 @@
             if (user && user.email === ADMIN_EMAIL) {
                 isAdmin = true;
                 document.getElementById('adminBadge').style.display = 'block';
-                els.homeFab.style.display = 'flex'; // Show Add button on home
+                els.homeFab.style.display = 'flex'; 
             } else {
                 isAdmin = false;
                 document.getElementById('adminBadge').style.display = 'none';
@@ -490,7 +400,7 @@
             loadModules();
         });
 
-        // --- HOME PAGE (MODULES) ---
+        // --- HOME PAGE ---
         function loadModules() {
             onSnapshot(query(collection(db, "app_modules"), orderBy("order")), (snap) => {
                 modules = [];
@@ -508,29 +418,19 @@
                         </div>
                         <div style="font-size:1.5rem">${data.icon || '📁'}</div>
                     `;
-                    
-                    // Click to Open
                     el.onclick = () => openModule(data.id);
-                    
-                    // Right Click / Long Press
                     setupContextTrigger(el, 'module', data);
-                    
                     els.homeList.appendChild(el);
                 });
             });
         }
 
-        // --- SIDEBAR (DISEASES) ---
+        // --- SIDEBAR ---
         function openModule(id) {
             currentModuleId = id;
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
-            
-            // FIX: Auto-open sidebar AND update button position on mobile
-            if(window.innerWidth <= 768) {
-                toggleSidebar(true);
-            }
-            
+            if(window.innerWidth <= 768) toggleSidebar(true);
             loadDiseases();
         }
 
@@ -539,7 +439,7 @@
             onSnapshot(q, (snap) => {
                 diseases = [];
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
-                diseases.sort((a,b) => (a.order || 999) - (b.order || 999)); // Sort by order
+                diseases.sort((a,b) => (a.order || 999) - (b.order || 999));
                 renderSidebar();
             });
         }
@@ -555,153 +455,32 @@
                 
                 const listContainer = document.createElement('div');
                 listContainer.className = "disease-list";
-                // Add Sortable to this list
-                // Inside renderSidebar...
                 if(isAdmin) {
                     new Sortable(listContainer, {
-                        group: 'diseases',
-                        animation: 150,
-                        delay: 700, // Wait 0.7s before drag starts
-                        delayOnTouchOnly: true, // Only on touch
-                        onStart: () => {
-                            // If drag starts (after 0.7s), hide any popup that opened
-                            els.ctxMenu.style.display = 'none';
-                        },
-                        onEnd: (evt) => handleReorder(evt, cat)
+                        group: 'diseases', animation: 150, delay: 700, delayOnTouchOnly: true,
+                        onStart: () => { els.ctxMenu.style.display = 'none'; },
+                        onEnd: (evt) => handleReorder(evt)
                     });
                 }
                 diseases.filter(d => d.category === cat).forEach(d => {
                     const item = document.createElement('div');
                     item.className = `disease-item ${currentDiseaseId === d.id ? 'active' : ''}`;
-                    item.dataset.id = d.id; // REQUIRED FOR DRAG & DROP
+                    item.dataset.id = d.id; 
                     item.innerText = d.name;
                     item.onclick = () => selectDisease(d);
                     setupContextTrigger(item, 'disease', d);
                     listContainer.appendChild(item);
                 });
-
                 catContainer.appendChild(listContainer);
                 els.sidebarContent.appendChild(catContainer);
             });
 
-            // Context Menu on Empty Sidebar Space (To Add Disease)
             els.sidebarContent.oncontextmenu = (e) => {
                 if(e.target === els.sidebarContent && isAdmin) {
                     e.preventDefault();
-                    showContextMenu(e.clientX, e.clientY, [
-                        { label: 'Add Disease', action: () => openModal('add_disease') }
-                    ]);
+                    showContextMenu(e.clientX, e.clientY, [{ label: 'Add Disease', action: () => openModal('add_disease') }]);
                 }
             };
-        }
-
-        // --- TAB LOGIC ---
-        async function loadTabs(diseaseId) {
-            const tabsRef = collection(db, "diseases", diseaseId, "tabs");
-            const q = query(tabsRef, orderBy("order", "asc")); // Ensure you have an index or use simple sorting
-            
-            const snap = await onSnapshot(q, (snapshot) => {
-                const tabs = [];
-                snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
-                
-                // If no tabs exist, create default "Notes"
-                if(tabs.length === 0) {
-                    addTab("Notes", true); // Auto-create
-                } else {
-                    // Sort locally if needed
-                    tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
-                    renderTabs(tabs);
-                    
-                    // If no tab selected, select first
-                    if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
-                        switchTab(tabs[0]);
-                    }
-                }
-            });
-        }
-
-        function renderTabs(tabs) {
-            const container = els.tabsContainer;
-            container.innerHTML = "";
-            
-            tabs.forEach(tab => {
-                const btn = document.createElement("div");
-                btn.className = `tab-pill ${tab.id === currentTabId ? 'active' : ''}`;
-                btn.innerText = tab.title;
-                btn.onclick = () => switchTab(tab);
-                
-                // NEW: Right Click / Long Press to Edit Tab
-                if(isAdmin) {
-                    btn.oncontextmenu = (e) => {
-                        e.preventDefault();
-                        showContextMenu(e.clientX, e.clientY, [
-                            { label: 'Rename Tab', action: () => renameTab(tab) },
-                            { label: 'Delete Tab', class: 'delete', action: () => deleteTab(tab) }
-                        ]);
-                    };
-                }
-                
-                container.appendChild(btn);
-            });
-
-            if(isAdmin) {
-                const addBtn = document.createElement("div");
-                addBtn.className = "add-tab-btn";
-                addBtn.innerText = "+";
-                addBtn.onclick = () => promptAddTab();
-                container.appendChild(addBtn);
-            }
-        }
-
-        // New Tab Actions
-        async function renameTab(tab) {
-            const newName = prompt("Rename Tab:", tab.title);
-            if(newName) {
-                await updateDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id), { title: newName });
-            }
-        }
-
-        async function deleteTab(tab) {
-            if(confirm(`Delete tab "${tab.title}"?`)) {
-                await deleteDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
-            }
-        }
-        async function promptAddTab() {
-            const name = prompt("New Tab Name:");
-            if(name) addTab(name);
-        }
-
-        async function addTab(title, isAuto = false) {
-            if(!currentDiseaseId) return;
-            const newOrder = Date.now(); // Simple ordering
-            const docRef = await addDoc(collection(db, "diseases", currentDiseaseId, "tabs"), {
-                title: title,
-                content: "",
-                order: newOrder
-            });
-            if(!isAuto) switchTab({id: docRef.id, title: title, content: ""});
-        }
-
-        async function switchTab(tab) {
-            currentTabId = tab.id;
-            
-            // 1. Update UI
-            const pills = document.querySelectorAll(".tab-pill");
-            pills.forEach(p => p.classList.remove("active"));
-            // Find the one we clicked (simple matching)
-            for(let p of pills) { if(p.innerText === tab.title) p.classList.add("active"); }
-
-            // 2. Load Content into Editor
-            // We need to fetch the latest content in case it changed
-            // But for responsiveness, we use the passed 'tab' object if available from snapshot
-            // Ideally, we fetch the single doc to get 'content' specifically
-            const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
-            
-            const content = docSnap.exists() ? docSnap.data().content : "";
-            
-            document.getElementById('editor').innerHTML = content || '<p>Start writing...</p>';
-            // Reset scroll
-            document.getElementById('editor').scrollTop = 0;
         }
 
         // --- CORE UI ---
@@ -712,11 +491,9 @@
         };
 
         window.toggleRetract = () => {
-            // Check if Mobile
             if (window.innerWidth <= 768) {
-                toggleSidebar(); // Use mobile logic
+                toggleSidebar(); 
             } else {
-                // PC Logic
                 els.sidebar.classList.toggle('collapsed');
                 const btn = document.getElementById('sidebarToggle');
                 if(btn) btn.classList.toggle('collapsed');
@@ -726,11 +503,8 @@
         window.toggleSidebar = (forceState) => {
             const isOpen = els.sidebar.style.transform === 'translateX(0px)';
             const shouldOpen = forceState !== undefined ? forceState : !isOpen;
-            
             els.sidebar.style.transform = shouldOpen ? 'translateX(0px)' : '';
             document.getElementById('backdrop').style.display = shouldOpen ? 'block' : 'none';
-            
-            // FIX: Update button position for mobile
             const btn = document.getElementById('sidebarToggle');
             if(btn) {
                 if(shouldOpen) btn.classList.add('mobile-open');
@@ -740,71 +514,253 @@
 
         function selectDisease(data) {
             currentDiseaseId = data.id;
-            currentTabId = null; // Reset tab
+            currentTabId = null;
             
             els.welcomeMsg.style.display = 'none';
             els.caseDetails.style.display = 'flex';
             
-            // Set Header Info
             els.detailTitle.innerText = data.name;
             els.detailCat.innerText = data.category;
-            document.getElementById('note-title').value = data.name; // Sync title input
+            document.getElementById('note-title').value = data.name;
             
-            // Update Sidebar UI
             renderSidebar();
-            
-            // Load Tabs (This handles the content loading now)
             loadTabs(data.id);
 
-            if(window.innerWidth <= 768) {
-                toggleSidebar(false);
-            }
+            if(window.innerWidth <= 768) toggleSidebar(false);
 
-            // --- NEW: Scroll Title Logic ---
+            // Scroll Title Logic
             const mainTitle = document.querySelector('.app-title');
             const originalTitle = "IM Disease";
-            
-            // Reset title immediately
             mainTitle.innerText = originalTitle;
+            mainTitle.style.color = "var(--accent-color)";
 
-            // Remove old listener if exists to prevent duplicates (simple hack: clone node)
-            const oldContent = document.getElementById('contentArea');
-            const newContent = oldContent.cloneNode(false); // Clone without children
-            // We must re-append children because cloneNode(false) is empty
+            // Clone to remove old listener
+            const oldContent = els.contentArea;
+            const newContent = oldContent.cloneNode(false);
             while(oldContent.firstChild) newContent.appendChild(oldContent.firstChild);
             oldContent.parentNode.replaceChild(newContent, oldContent);
-            els.contentArea = newContent; // Update reference
+            els.contentArea = newContent;
 
-            // Add new Listener
-            els.contentArea.addEventListener('scroll', (e) => {
-                if(e.target.scrollTop > 60) {
-                    mainTitle.innerText = data.name; // Change header to Disease Name
+            els.contentArea.onscroll = (e) => {
+                if (e.target.scrollTop > 60) {
+                    mainTitle.innerText = data.name; 
+                    mainTitle.style.color = "white";
                 } else {
-                    mainTitle.innerText = originalTitle; // Revert
+                    mainTitle.innerText = originalTitle; 
+                    mainTitle.style.color = "var(--accent-color)";
+                }
+            };
+        }
+
+        // --- TAB LOGIC ---
+        async function loadTabs(diseaseId) {
+            const tabsRef = collection(db, "diseases", diseaseId, "tabs");
+            const q = query(tabsRef, orderBy("order", "asc"));
+            
+            onSnapshot(q, (snapshot) => {
+                const tabs = [];
+                snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
+                if(tabs.length === 0) {
+                    addTab("Notes", true); 
+                } else {
+                    tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
+                    renderTabs(tabs);
+                    if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
+                        switchTab(tabs[0]);
+                    }
                 }
             });
         }
 
-        // --- CONTEXT MENU SYSTEM ---
+        function renderTabs(tabs) {
+            const container = els.tabsContainer;
+            container.innerHTML = "";
+            tabs.forEach(tab => {
+                const btn = document.createElement("div");
+                btn.className = `tab-pill ${tab.id === currentTabId ? 'active' : ''}`;
+                btn.innerText = tab.title;
+                btn.onclick = () => switchTab(tab);
+                if(isAdmin) {
+                    btn.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        showContextMenu(e.clientX, e.clientY, [
+                            { label: 'Rename Tab', action: () => renameTab(tab) },
+                            { label: 'Delete Tab', class: 'delete', action: () => deleteTab(tab) }
+                        ]);
+                    };
+                }
+                container.appendChild(btn);
+            });
+            if(isAdmin) {
+                const addBtn = document.createElement("div");
+                addBtn.className = "add-tab-btn";
+                addBtn.innerText = "+";
+                addBtn.onclick = () => promptAddTab();
+                container.appendChild(addBtn);
+            }
+        }
+
+        async function promptAddTab() {
+            const name = prompt("New Tab Name:");
+            if(name) addTab(name);
+        }
+
+        async function addTab(title, isAuto = false) {
+            if(!currentDiseaseId) return;
+            const docRef = await addDoc(collection(db, "diseases", currentDiseaseId, "tabs"), {
+                title: title, content: "", order: Date.now()
+            });
+            if(!isAuto) switchTab({id: docRef.id, title: title, content: ""});
+        }
+
+        async function renameTab(tab) {
+            const newName = prompt("Rename Tab:", tab.title);
+            if(newName) await updateDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id), { title: newName });
+        }
+
+        async function deleteTab(tab) {
+            if(confirm(`Delete tab "${tab.title}"?`)) await deleteDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
+        }
+
+        async function switchTab(tab) {
+            currentTabId = tab.id;
+            const pills = document.querySelectorAll(".tab-pill");
+            pills.forEach(p => p.classList.remove("active"));
+            for(let p of pills) { if(p.innerText === tab.title) p.classList.add("active"); }
+
+            const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
+            const content = docSnap.exists() ? docSnap.data().content : "";
+            document.getElementById('editor').innerHTML = content || '<p>Start writing...</p>';
+            document.getElementById('editor').scrollTop = 0;
+        }
+
+        // --- EDITOR LOGIC ---
+        window.toggleEditMode = () => {
+            isEditMode = !isEditMode;
+            const editor = document.getElementById('editor');
+            const toolbar = document.getElementById('editor-toolbar');
+            const fab = document.getElementById('editorFab'); 
+            
+            if(isEditMode) {
+                editor.contentEditable = true;
+                toolbar.classList.add('visible');
+                fab.classList.add('visible'); 
+            } else {
+                editor.contentEditable = false;
+                toolbar.classList.remove('visible');
+                fab.classList.remove('visible'); 
+                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+            }
+        };
+
+        window.fmt = (cmd, val) => {
+            document.execCommand(cmd, false, val);
+            document.getElementById('editor').focus();
+        };
+
+        window.insertBox = (color) => {
+            const title = prompt("Box Title (e.g. GOLDEN QUESTIONS):");
+            if (!title) return;
+            const html = `
+                <div class="clinical-box box-${color}">
+                    <div class="box-header" contenteditable="true">${title}</div>
+                    <div class="box-body" contenteditable="true"><ul><li>Write points here...</li></ul></div>
+                </div><p><br></p>
+            `;
+            document.getElementById('editor').focus();
+            document.execCommand('insertHTML', false, html);
+        };
+
+        window.insertVideo = () => {
+            const url = prompt("YouTube Link:");
+            if(url) {
+                const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11}).*/);
+                if(match) {
+                    const html = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:10px 0;"><iframe src="https://www.youtube.com/embed/${match[1]}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"></iframe></div><p><br></p>`;
+                    document.execCommand('insertHTML', false, html);
+                }
+            }
+        };
+
+        window.createLink = () => {
+            const url = prompt("Enter URL:");
+            if(url) fmt('createLink', url);
+        };
+
+        window.cleanLaTeX = () => {
+            const editor = document.getElementById('editor');
+            let html = editor.innerHTML;
+            html = html.replace(/\\ge/g, '≥').replace(/\\le/g, '≤').replace(/\\approx/g, '≈').replace(/\\pm/g, '±')
+                .replace(/\\ne/g, '≠').replace(/\\times/g, '×').replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '←');
+            html = html.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\$/g, ''); 
+            html = html.replace(/_\{?(\d+)\}?/g, (m, d) => `<sub>${d}</sub>`).replace(/\^\{?(\d+)\}?/g, (m, d) => `<sup>${d}</sup>`);
+            editor.innerHTML = html;
+            if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+        };
+
+        document.getElementById('editor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                const key = e.key.toLowerCase();
+                if(key === 'b') { e.preventDefault(); fmt('bold'); }
+                if(key === 'i') { e.preventDefault(); fmt('italic'); }
+                if(key === 'u') { e.preventDefault(); fmt('underline'); }
+            }
+        });
+
+        document.getElementById('editor').addEventListener('input', () => {
+             if(currentDiseaseId) {
+                 clearTimeout(saveTimeout);
+                 saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 1000);
+             }
+        });
+
+        async function saveNoteContent(diseaseId) {
+            if(!currentTabId) return;
+            const content = document.getElementById('editor').innerHTML;
+            await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
+                content: content, lastUpdated: new Date() 
+            });
+            const plainText = document.getElementById('editor').innerText;
+            await updateDoc(doc(db, "diseases", diseaseId), {
+                searchIndex: plainText.substring(0, 1000).toLowerCase() 
+            });
+        }
+
+        // --- SEARCH ---
+        document.getElementById('searchSidebar').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const container = document.getElementById('sidebarContent');
+            if(query.length < 2) { renderSidebar(); return; }
+
+            const results = diseases.filter(d => {
+                const nameMatch = d.name.toLowerCase().includes(query);
+                const contentMatch = (d.searchIndex || "").includes(query); 
+                return nameMatch || contentMatch;
+            });
+
+            container.innerHTML = "";
+            results.forEach(d => {
+                const div = document.createElement("div");
+                div.className = "disease-item"; 
+                const regex = new RegExp(`(${query})`, 'gi');
+                const nameHtml = d.name.replace(regex, "<mark style='background:#3b82f6;color:white'>$1</mark>");
+                div.innerHTML = `<div style="font-size:0.8rem;opacity:0.7">${d.category}</div><div>${nameHtml}</div>`;
+                div.onclick = () => selectDisease(d);
+                container.appendChild(div);
+            });
+        });
+
+        // --- CONTEXT MENUS & MODALS ---
         function setupContextTrigger(el, type, data) {
             if (!isAdmin) return;
-
-            // PC Right Click
             el.oncontextmenu = (e) => {
                 e.preventDefault(); e.stopPropagation();
                 showMenuForType(e.clientX, e.clientY, type, data);
             };
-
-            // Mobile Long Press (0.2s)
             let timer;
             el.addEventListener('touchstart', (e) => {
-                timer = setTimeout(() => {
-                    // Open menu after 200ms
-                    showMenuForType(e.touches[0].clientX, e.touches[0].clientY, type, data);
-                }, 200); 
+                timer = setTimeout(() => { showMenuForType(e.touches[0].clientX, e.touches[0].clientY, type, data); }, 200); 
             });
-            
-            // Cancel if touch moves (scrolls) or ends
             el.addEventListener('touchmove', () => clearTimeout(timer));
             el.addEventListener('touchend', () => clearTimeout(timer));
         }
@@ -812,15 +768,9 @@
         function showMenuForType(x, y, type, data) {
             let items = [];
             if (type === 'module') {
-                items = [
-                    { label: 'Edit Section', action: () => openModal('edit_module', data) },
-                    { label: 'Delete', class: 'delete', action: () => deleteItem('app_modules', data.id) }
-                ];
+                items = [{ label: 'Edit Section', action: () => openModal('edit_module', data) }, { label: 'Delete', class: 'delete', action: () => deleteItem('app_modules', data.id) }];
             } else if (type === 'disease') {
-                items = [
-                    { label: 'Edit Disease', action: () => openModal('edit_disease', data) },
-                    { label: 'Delete', class: 'delete', action: () => deleteItem('diseases', data.id) }
-                ];
+                items = [{ label: 'Edit Disease', action: () => openModal('edit_disease', data) }, { label: 'Delete', class: 'delete', action: () => deleteItem('diseases', data.id) }];
             }
             showContextMenu(x, y, items);
         }
@@ -831,284 +781,60 @@
                 const div = document.createElement('div');
                 div.className = `ctx-item ${item.class || ''}`;
                 div.innerText = item.label;
-                div.onclick = () => {
-                    els.ctxMenu.style.display = 'none';
-                    item.action();
-                };
+                div.onclick = () => { els.ctxMenu.style.display = 'none'; item.action(); };
                 els.ctxMenu.appendChild(div);
             });
-            
-            // Positioning bounds check
             els.ctxMenu.style.display = 'block';
-            const w = els.ctxMenu.offsetWidth;
-            const h = els.ctxMenu.offsetHeight;
-            
-            // Adjust if off screen
+            const w = els.ctxMenu.offsetWidth; const h = els.ctxMenu.offsetHeight;
             if (x + w > window.innerWidth) x -= w;
             if (y + h > window.innerHeight) y -= h;
-
-            els.ctxMenu.style.left = `${x}px`;
-            els.ctxMenu.style.top = `${y}px`;
+            els.ctxMenu.style.left = `${x}px`; els.ctxMenu.style.top = `${y}px`;
         }
 
         document.addEventListener('click', () => els.ctxMenu.style.display = 'none');
 
-        // --- UNIVERSAL MODAL & FORMS ---
         window.openModal = (type, data = {}) => {
             els.modal.style.display = 'flex';
-            let html = '';
-            let onSave = null;
-
-            if (type === 'add_module' || type === 'edit_module') {
+            let html = '', onSave = null;
+            if (type.includes('module')) {
                 els.modalTitle.innerText = type === 'add_module' ? 'New Section' : 'Edit Section';
-                html = `
-                    <div class="form-group"><label class="form-label">Title</label><input id="inpTitle" class="form-input" value="${data.title || ''}"></div>
-                    <div class="form-group"><label class="form-label">Subtitle</label><input id="inpSub" class="form-input" value="${data.subtitle || ''}"></div>
-                    <div class="form-group"><label class="form-label">Icon (Emoji)</label><input id="inpIcon" class="form-input" value="${data.icon || ''}"></div>
-                `;
+                html = `<div class="form-group"><label class="form-label">Title</label><input id="inpTitle" class="form-input" value="${data.title || ''}"></div><div class="form-group"><label class="form-label">Subtitle</label><input id="inpSub" class="form-input" value="${data.subtitle || ''}"></div><div class="form-group"><label class="form-label">Icon (Emoji)</label><input id="inpIcon" class="form-input" value="${data.icon || ''}"></div>`;
                 onSave = async () => {
-                    const payload = {
-                        title: document.getElementById('inpTitle').value,
-                        subtitle: document.getElementById('inpSub').value,
-                        icon: document.getElementById('inpIcon').value,
-                        order: data.order || Date.now()
-                    };
-                    if(type === 'add_module') await addDoc(collection(db, "app_modules"), payload);
-                    else await updateDoc(doc(db, "app_modules", data.id), payload);
+                    const payload = { title: document.getElementById('inpTitle').value, subtitle: document.getElementById('inpSub').value, icon: document.getElementById('inpIcon').value, order: data.order || Date.now() };
+                    if(type === 'add_module') await addDoc(collection(db, "app_modules"), payload); else await updateDoc(doc(db, "app_modules", data.id), payload);
                 };
-            } 
-            else if (type === 'add_disease' || type === 'edit_disease') {
+            } else {
                 els.modalTitle.innerText = type === 'add_disease' ? 'New Disease' : 'Edit Disease';
-                // Category Datalist
                 const catOptions = categories.map(c => `<option value="${c}">`).join('');
-                html = `
-                    <div class="form-group"><label class="form-label">Disease Name</label><input id="inpName" class="form-input" value="${data.name || ''}"></div>
-                    <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <input id="inpCat" class="form-input" list="catList" value="${data.category || ''}">
-                        <datalist id="catList">${catOptions}</datalist>
-                    </div>
-                `;
+                html = `<div class="form-group"><label class="form-label">Disease Name</label><input id="inpName" class="form-input" value="${data.name || ''}"></div><div class="form-group"><label class="form-label">Category</label><input id="inpCat" class="form-input" list="catList" value="${data.category || ''}"><datalist id="catList">${catOptions}</datalist></div>`;
                 onSave = async () => {
-                    const payload = {
-                        name: document.getElementById('inpName').value,
-                        category: document.getElementById('inpCat').value,
-                        moduleId: currentModuleId
-                    };
-                    if(type === 'add_disease') await addDoc(collection(db, "diseases"), payload);
-                    else await updateDoc(doc(db, "diseases", data.id), payload);
+                    const payload = { name: document.getElementById('inpName').value, category: document.getElementById('inpCat').value, moduleId: currentModuleId };
+                    if(type === 'add_disease') await addDoc(collection(db, "diseases"), payload); else await updateDoc(doc(db, "diseases", data.id), payload);
                 };
             }
-
             els.modalForm.innerHTML = html;
-            els.modalSaveBtn.onclick = async () => {
-                await onSave();
-                window.closeModal();
-            };
+            els.modalSaveBtn.onclick = async () => { await onSave(); window.closeModal(); };
         };
 
         window.closeModal = () => els.modal.style.display = 'none';
 
-        // --- LOGIC: DELETE & REORDER ---
-        async function handleReorder(evt, targetCategory) {
-            // 1. Get the new category from the DOM header where item was dropped
-            // The item is dropped into a listContainer, its parent is catContainer
-            const newCategory = evt.to.parentElement.querySelector('.category-header').innerText;
-            
+        async function deleteItem(col, id) { if(confirm("Permanently delete?")) await deleteDoc(doc(db, col, id)); }
+
+        async function handleReorder(evt) {
+            els.ctxMenu.style.display = 'none';
+            const parentGroup = evt.to.closest('.category-group');
+            if(!parentGroup) return;
+            const newCategory = parentGroup.querySelector('.category-header').innerText;
             const batch = writeBatch(db);
             const listItems = evt.to.querySelectorAll('.disease-item');
-            
-            // 2. Batch update ALL items in this list to save the order
             listItems.forEach((el, index) => {
                 const id = el.dataset.id;
-                batch.update(doc(db, "diseases", id), {
-                    category: newCategory,
-                    order: index + 1 // Save numerical order
-                });
+                if(id) batch.update(doc(db, "diseases", id), { category: newCategory, order: index + 1 });
             });
-
             await batch.commit();
         }
 
-        // FAB Listeners
         els.homeFab.onclick = () => openModal('add_module');
-
-        // --- EDITOR LOGIC ---
-        
-        // Toggle Edit Mode (Call this from your existing Edit/Context menu)
-        window.toggleEditMode = (forceState) => {
-            isEditMode = forceState !== undefined ? forceState : !isEditMode;
-            const editor = document.getElementById('editor');
-            const toolbar = document.getElementById('editor-toolbar');
-            const titleInput = document.getElementById('note-title');
-            
-            if(isEditMode) {
-                editor.contentEditable = true;
-                titleInput.removeAttribute('readonly');
-                toolbar.classList.add('visible');
-            } else {
-                editor.contentEditable = false;
-                titleInput.setAttribute('readonly', true);
-                toolbar.classList.remove('visible');
-                // Trigger save on exit
-                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
-            }
-        };
-
-        // Basic Formatting
-        window.fmt = (cmd, val) => {
-            document.execCommand(cmd, false, val);
-            document.getElementById('editor').focus();
-        };
-
-        // Insert Table (Fixed Logic)
-        window.insertTable = () => {
-            const html = `
-                <table style="width:100%; border-collapse: collapse; margin: 10px 0; border: 1px solid var(--border-color);">
-                    <tr><td style="border: 1px solid var(--border-color); padding: 8px;">Header 1</td><td style="border: 1px solid var(--border-color); padding: 8px;">Header 2</td></tr>
-                    <tr><td style="border: 1px solid var(--border-color); padding: 8px;">Cell 1</td><td style="border: 1px solid var(--border-color); padding: 8px;">Cell 2</td></tr>
-                </table><p><br></p>`;
-            fmt('insertHTML', html);
-        };
-
-        // Auto-Save Logic
-        document.getElementById('editor').addEventListener('input', () => {
-             if(currentDiseaseId) {
-                 clearTimeout(saveTimeout);
-                 saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 1000);
-             }
-        });
-
-        // Save to Firebase
-        async function saveNoteContent(diseaseId) {
-            if(!currentTabId) return;
-            
-            const content = document.getElementById('editor').innerHTML;
-            
-            // 1. Save to the TAB
-            await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
-                content: content,
-                lastUpdated: new Date()
-            });
-
-            // 2. NEW: Update Main Disease Document with searchable text
-            // We create a 'searchContent' field that combines current content
-            // NOTE: Ideally you'd aggregate all tabs, but for now we index the *active* tab text
-            const div = document.createElement("div");
-            div.innerHTML = content;
-            const plainText = div.innerText; // Strip HTML
-
-            await updateDoc(doc(db, "diseases", diseaseId), {
-                // We append to a specific field or just update a 'lastEditedContent' field
-                // Simple approach: Update a 'keywords' or 'searchSnippet' field
-                searchSnippet: plainText.substring(0, 500) // Index first 500 chars
-            });
-        }
-        // --- SEARCH LOGIC (From IM Notes Pro) ---
-        document.getElementById('searchSidebar').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const container = document.getElementById('sidebarContent');
-            
-            if(query.length < 2) { renderSidebar(); return; }
-
-            // Filter based on Name OR SearchSnippet
-            const results = diseases.filter(d => {
-                const nameMatch = d.name.toLowerCase().includes(query);
-                const contentMatch = (d.searchSnippet || "").toLowerCase().includes(query);
-                return nameMatch || contentMatch;
-            });
-
-            container.innerHTML = "";
-            results.forEach(d => {
-                const div = document.createElement("div");
-                div.className = "search-result-item";
-                
-                // Highlight Logic
-                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                const titleHtml = d.name.replace(regex, "<mark>$1</mark>");
-                
-                div.innerHTML = `
-                    <div class="result-path">${d.category}</div>
-                    <div class="result-title">${titleHtml}</div>
-                `;
-                div.onclick = () => selectDisease(d);
-                container.appendChild(div);
-            });
-        });
-
-        // --- EDITOR ENHANCEMENTS ---
-
-        // 1. Hotkeys & Shortcuts
-        document.getElementById('editor').addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                const key = e.key.toLowerCase();
-                if(key === 'b') { e.preventDefault(); fmt('bold'); }
-                if(key === 'i') { e.preventDefault(); fmt('italic'); }
-                if(key === 'u') { e.preventDefault(); fmt('underline'); }
-            }
-        });
-
-        // 2. Insert YouTube Video
-        window.insertVideo = () => {
-            const url = prompt("Paste YouTube URL:");
-            if(url) {
-                const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-                if(match && match[1]) {
-                    const html = `<div style="position:relative; padding-bottom:56.25%; height:0; margin:1rem 0; overflow:hidden; border-radius:8px;"><iframe src="https://www.youtube.com/embed/${match[1]}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe></div><p><br></p>`;
-                    fmt('insertHTML', html);
-                } else { alert("Invalid YouTube URL"); }
-            }
-        };
-
-        // 3. Insert Colored Box
-        window.insertColoredBox = () => {
-            const color = prompt("Box Color (blue, red, green, orange):", "blue");
-            const title = prompt("Box Title:", "Clinical Pearl");
-            
-            const colorMap = {
-                blue:   { bg: "rgba(59, 130, 246, 0.1)", border: "#3b82f6" },
-                red:    { bg: "rgba(239, 68, 68, 0.1)", border: "#ef4444" },
-                green:  { bg: "rgba(34, 197, 94, 0.1)", border: "#22c55e" },
-                orange: { bg: "rgba(249, 115, 22, 0.1)", border: "#f97316" }
-            };
-            
-            const theme = colorMap[color.toLowerCase()] || colorMap['blue'];
-            
-            const html = `
-                <div class="info-box" style="background-color:${theme.bg}; border-left-color:${theme.border};">
-                    <div class="box-header" style="background-color:${theme.bg}; color:${theme.border}">${title}</div>
-                    <div class="box-content">Write content here...</div>
-                </div><p><br></p>
-            `;
-            fmt('insertHTML', html);
-        };
-
-        // 4. Create Link (Fixed)
-        window.createLink = () => {
-            const url = prompt("Enter URL:");
-            if(url) fmt('createLink', url);
-        };
-
-        // 5. Clean LaTeX (From Notes Pro)
-        window.cleanLaTeX = () => {
-            const editor = document.getElementById('editor');
-            let html = editor.innerHTML;
-            
-            html = html
-                .replace(/\\ge/g, '≥').replace(/\\le/g, '≤')
-                .replace(/\\approx/g, '≈').replace(/\\pm/g, '±')
-                .replace(/\\ne/g, '≠').replace(/\\times/g, '×')
-                .replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '←')
-                .replace(/\^\\circ/g, '°');
-            
-            // Remove \text{} wrappers
-            html = html.replace(/\\text\{([^}]+)\}/g, '$1');
-            
-            editor.innerHTML = html;
-            // Trigger save
-            if(currentTabId && currentDiseaseId) saveNoteContent(currentDiseaseId);
-        };
-
     </script>
 </body>
 </html>
