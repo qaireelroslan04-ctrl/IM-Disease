@@ -145,11 +145,6 @@
         .clinical-box {
             border-radius: 12px; margin-bottom: 20px; background: var(--bg-card);
             border: 2px solid transparent; overflow: hidden; transition: all 0.2s ease;
-        }
-        /* Clinical Boxes */
-        .clinical-box {
-            border-radius: 12px; margin-bottom: 20px; background: var(--bg-card);
-            border: 2px solid transparent; overflow: hidden; transition: all 0.2s ease;
             position: relative;
         }
         .clinical-box:focus-within { box-shadow: 0 0 15px rgba(0,0,0,0.5); transform: translateY(-2px); }
@@ -180,6 +175,7 @@
         .box-body p { margin-bottom: 10px; }
         .box-body ul, .box-body ol { padding-left: 25px; margin-bottom: 10px; }
         .box-body blockquote { border-left: 3px solid var(--accent-color); padding-left: 10px; opacity: 0.8; }
+
         /* FAB for Boxes */
         .editor-fab-container {
             position: fixed; bottom: 30px; right: 30px;
@@ -259,7 +255,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.1.4</span>
+            <span class="version-badge">v0.1.5</span>
         </div>
         <div style="display:flex; align-items:center;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -535,6 +531,11 @@
         };
 
         function selectDisease(data) {
+            // FIX: Save previous state before switching
+            if(currentDiseaseId && currentTabId) {
+                saveNoteContent(currentDiseaseId);
+            }
+
             currentDiseaseId = data.id;
             currentTabId = null;
             
@@ -550,13 +551,11 @@
 
             if(window.innerWidth <= 768) toggleSidebar(false);
 
-            // Scroll Title Logic
             const mainTitle = document.querySelector('.app-title');
             const originalTitle = "IM Disease";
             mainTitle.innerText = originalTitle;
             mainTitle.style.color = "var(--accent-color)";
 
-            // Clone to remove old listener
             const oldContent = els.contentArea;
             const newContent = oldContent.cloneNode(false);
             while(oldContent.firstChild) newContent.appendChild(oldContent.firstChild);
@@ -645,6 +644,11 @@
         }
 
         async function switchTab(tab) {
+            // FIX: Save previous tab before switching
+            if(currentDiseaseId && currentTabId) {
+                await saveNoteContent(currentDiseaseId);
+            }
+
             currentTabId = tab.id;
             const pills = document.querySelectorAll(".tab-pill");
             pills.forEach(p => p.classList.remove("active"));
@@ -652,25 +656,20 @@
 
             const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
             const content = docSnap.exists() ? docSnap.data().content : "";
-            document.getElementById('editor').innerHTML = content || '<p>Start writing...</p>';
-            // ... inside switchTab ...
+            
             document.getElementById('editor').innerHTML = content || '<div style="padding:20px;text-align:center;color:gray;">Tap Edit ✎ then + to add a Clinical Box</div>';
             
-            attachBoxListeners(); // FIX: Re-enable delete buttons
-            toggleEditMode(); toggleEditMode(); // Quick toggle to reset state (ensure read-only/hidden buttons)
+            attachBoxListeners(); 
+            toggleEditMode(); toggleEditMode(); 
             document.getElementById('editor').scrollTop = 0;
         }
 
-        // --- EDITOR LOGIC (Alpha 0.1.4: Box-Only Workflow) ---
-        
-        // 1. Toggle Edit Mode
-        // Instead of making the whole #editor editable, we only toggle the children (boxes)
+        // --- EDITOR LOGIC ---
         window.toggleEditMode = () => {
             isEditMode = !isEditMode;
             const toolbar = document.getElementById('editor-toolbar');
             const fab = document.getElementById('editorFab'); 
             
-            // Toggle Visibility
             if(isEditMode) {
                 toolbar.classList.add('visible');
                 fab.classList.add('visible'); 
@@ -680,7 +679,6 @@
                 if(currentDiseaseId) saveNoteContent(currentDiseaseId);
             }
 
-            // Toggle Content Editable for Boxes Only
             const headers = document.querySelectorAll('.box-header-title');
             const bodies = document.querySelectorAll('.box-body');
             const delBtns = document.querySelectorAll('.box-delete-btn');
@@ -690,64 +688,55 @@
             delBtns.forEach(btn => btn.style.display = isEditMode ? 'block' : 'none');
         };
 
-        // 2. Insert Box (DOM Manipulation)
         window.insertBox = (color) => {
             const title = prompt("Box Title (e.g. GOLDEN QUESTIONS):");
             if (!title) return;
 
-            // Create Box Container
             const box = document.createElement('div');
             box.className = `clinical-box box-${color}`;
 
-            // Create Header
             const header = document.createElement('div');
             header.className = 'box-header';
             
-            // Header Title Span (Editable)
             const titleSpan = document.createElement('span');
             titleSpan.className = 'box-header-title';
             titleSpan.innerText = title;
-            titleSpan.contentEditable = true; // Immediately editable since we are in edit mode
+            titleSpan.contentEditable = true;
 
-            // Delete Button (Clickable, Not Editable)
             const delBtn = document.createElement('button');
             delBtn.className = 'box-delete-btn';
             delBtn.innerHTML = '&times;';
-            delBtn.title = "Delete Box";
-            delBtn.style.display = 'block'; // Show immediately
+            delBtn.style.display = 'block'; 
             delBtn.onclick = () => {
-                if(confirm("Delete this entire box?")) box.remove();
+                if(confirm("Delete this entire box?")) {
+                    box.remove();
+                    saveNoteContent(currentDiseaseId);
+                }
             };
 
             header.appendChild(titleSpan);
             header.appendChild(delBtn);
 
-            // Create Body (Editable Rich Text)
             const body = document.createElement('div');
             body.className = 'box-body';
             body.contentEditable = true;
-            body.innerHTML = '<p>Start writing here...</p>'; // Default P tag for formatting
+            body.innerHTML = '<ul><li>Write points here...</li></ul>';
 
-            // Assemble
             box.appendChild(header);
             box.appendChild(body);
 
-            // Append to Main Editor Container
             document.getElementById('editor').appendChild(box);
-            
-            // Focus on the new body
             body.focus();
+            
+            // CRITICAL FIX: Save immediately so the box persists
+            if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
 
-        // 3. Formatting (Applied to active Box Body)
         window.fmt = (cmd, val) => {
-            // Check if focus is inside the editor
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
-            
             const anchor = selection.anchorNode;
             const insideBox = anchor && (anchor.nodeType === 3 ? anchor.parentNode : anchor).closest('.box-body');
-
             if (insideBox) {
                 document.execCommand(cmd, false, val);
                 insideBox.focus();
@@ -756,16 +745,11 @@
             }
         };
 
-        // 4. Video & Link (Context Aware)
         window.insertVideo = () => {
             const selection = window.getSelection();
             const anchor = selection.anchorNode;
             const insideBox = anchor ? (anchor.nodeType === 3 ? anchor.parentNode : anchor).closest('.box-body') : null;
-
-            if (!insideBox) {
-                alert("Click inside a box to insert a video.");
-                return;
-            }
+            if (!insideBox) { alert("Click inside a box to insert a video."); return; }
 
             const url = prompt("YouTube Link:");
             if(url) {
@@ -782,24 +766,60 @@
             if(url) window.fmt('createLink', url);
         };
 
-        // 5. Clean LaTeX
         window.cleanLaTeX = () => {
             const editor = document.getElementById('editor');
             let html = editor.innerHTML;
-            
             html = html.replace(/\\ge/g, '≥').replace(/\\le/g, '≤').replace(/\\approx/g, '≈').replace(/\\pm/g, '±')
                 .replace(/\\ne/g, '≠').replace(/\\times/g, '×').replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '←');
             html = html.replace(/\\text\{([^}]+)\}/g, '$1').replace(/\$/g, ''); 
             html = html.replace(/_\{?(\d+)\}?/g, (m, d) => `<sub>${d}</sub>`).replace(/\^\{?(\d+)\}?/g, (m, d) => `<sup>${d}</sup>`);
-            
             editor.innerHTML = html;
-            
-            // Re-attach listeners to new HTML (Delete buttons breaks on innerHTML replace, so we need to re-bind)
-            // A safer way for the future is to clean text node by node, but for Alpha this forces a reload of logic
-            // Ideally, the user saves and reloads, or we re-render. 
-            // For now, let's just trigger save.
+            // Force re-render to attach listeners (or just trigger save for now)
             if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
+
+        document.getElementById('editor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                const key = e.key.toLowerCase();
+                if(key === 'b') { e.preventDefault(); fmt('bold'); }
+                if(key === 'i') { e.preventDefault(); fmt('italic'); }
+                if(key === 'u') { e.preventDefault(); fmt('underline'); }
+            }
+        });
+
+        document.getElementById('editor').addEventListener('input', () => {
+             if(currentDiseaseId) {
+                 clearTimeout(saveTimeout);
+                 saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 1000);
+             }
+        });
+
+        async function saveNoteContent(diseaseId) {
+            if(!currentTabId) return;
+            const content = document.getElementById('editor').innerHTML;
+            
+            // Save Tab Content
+            await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
+                content: content, lastUpdated: new Date() 
+            });
+
+            // Index for Search
+            const plainText = document.getElementById('editor').innerText;
+            await updateDoc(doc(db, "diseases", diseaseId), {
+                searchIndex: plainText.substring(0, 1000).toLowerCase() 
+            });
+        }
+
+        function attachBoxListeners() {
+            document.querySelectorAll('.box-delete-btn').forEach(btn => {
+                btn.onclick = function() {
+                    if(confirm("Delete this entire box?")) {
+                        this.closest('.clinical-box').remove();
+                        if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+                    }
+                };
+            });
+        }
 
         // --- SEARCH ---
         document.getElementById('searchSidebar').addEventListener('input', (e) => {
@@ -908,20 +928,6 @@
             });
             await batch.commit();
         }
-
-        function attachBoxListeners() {
-            // Re-attach delete logic to existing buttons
-            document.querySelectorAll('.box-delete-btn').forEach(btn => {
-                btn.onclick = function() {
-                    if(confirm("Delete this entire box?")) {
-                        this.closest('.clinical-box').remove();
-                        if(currentDiseaseId) saveNoteContent(currentDiseaseId);
-                    }
-                };
-            });
-        }
-
-        
 
         els.homeFab.onclick = () => openModal('add_module');
     </script>
