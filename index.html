@@ -182,19 +182,20 @@
         }
         .box-delete-btn:hover { color: #ef4444; }
 
-        /* Re-enable text selection and fix cursor behavior */
-        .box-body, .box-header-title { 
+        /* CRITICAL FIX: Enable selection for the box AND ALL its content */
+        .box-body, .box-body *, .box-header-title { 
             user-select: text !important; 
-            cursor: text; 
             -webkit-user-select: text !important;
+            cursor: text;
         }
 
         .box-body { 
             padding: 15px; color: var(--text-main); font-size: 1rem; line-height: 1.6; 
             outline: none; min-height: 50px; 
-            white-space: normal; /* Fixes line wrapping issues */
+            white-space: pre-wrap; /* Preserves spaces but wraps text */
             word-break: break-word;
         }
+        
         /* Allow rich text elements inside box body */
         .box-body p { margin-bottom: 10px; }
         .box-body ul, .box-body ol { padding-left: 25px; margin-bottom: 10px; }
@@ -323,7 +324,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">Alpha 0.2.5</span>
+            <span class="version-badge">Alpha 0.2.6</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -892,7 +893,6 @@
             body.contentEditable = true;
             // Use a div for the content wrapper (Better for arrow keys/Enter)
             body.innerHTML = '<div>Write here...</div>';
-            body.addEventListener('keydown', handleEditorKeydown);
 
             box.appendChild(header);
             box.appendChild(body);
@@ -1050,6 +1050,9 @@
         };
         
         // --- NEW: Smart Editor Logic ---
+        // Ensure "Enter" key creates <div> lines instead of <p> for better navigation
+        document.execCommand("defaultParagraphSeparator", false, "div");
+        
         function handleEditorKeydown(e) {
             // Image Deletion Logic
             if (e.key === 'Backspace' || e.key === 'Delete') {
