@@ -314,7 +314,7 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">v0.2.2</span>
+            <span class="version-badge">Alpha 0.2.3</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -325,6 +325,7 @@
                 <div id="profileMenu" style="display:none; position:absolute; right:0; top:40px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; width:160px; box-shadow:0 4px 15px rgba(0,0,0,0.5); z-index:100; overflow:hidden;">
                     <div onclick="exportData()" class="ctx-item">Backup Data (JSON)</div>
                     <div onclick="triggerImport()" class="ctx-item">Import Data</div>
+                    <div onclick="restoreAutoBackup()" class="ctx-item" style="color:#3b82f6;">↺ Restore Auto-Save</div>
                     <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
                     <div onclick="handleAuth()" class="ctx-item" style="color:#ef4444;">Log Out</div>
                 </div>
@@ -438,7 +439,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, getDocs, setDoc, query, orderBy, onSnapshot, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // CONFIG
         const firebaseConfig = {
@@ -501,6 +502,7 @@
         onAuthStateChanged(auth, (user) => {
             if (user && user.email === ADMIN_EMAIL) {
                 isAdmin = true;
+                startAutoBackup();
                 if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'block';
                 if(els.homeFab) els.homeFab.style.display = 'flex'; 
             } else {
@@ -936,6 +938,107 @@
             if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
 
+        // --- AUTO-BACKUP SYSTEM (Alpha 0.2.3) ---
+        function startAutoBackup() {
+            // Run every 5 minutes (300000 ms)
+            setInterval(performFullBackup, 300000); 
+            console.log("Auto-Backup Service Started");
+        }
+
+        async function performFullBackup() {
+            if(!isAdmin) return; 
+            
+            const toast = document.createElement('div');
+            toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(59,130,246,0.9); color:white; padding:8px 16px; border-radius:20px; font-size:0.8rem; z-index:1000; pointer-events:none;";
+            toast.innerText = "⏳ Running Auto-Backup...";
+            document.body.appendChild(toast);
+
+            try {
+                // 1. Fetch Modules
+                const modSnap = await getDocs(collection(db, "app_modules"));
+                const modules = modSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+                // 2. Fetch All Diseases & Tabs
+                const disSnap = await getDocs(collection(db, "diseases"));
+                const diseasesData = [];
+
+                for (const dDoc of disSnap.docs) {
+                    const dData = { id: dDoc.id, ...dDoc.data(), tabs: [] };
+                    const tabsSnap = await getDocs(collection(db, "diseases", dDoc.id, "tabs"));
+                    dData.tabs = tabsSnap.docs.map(t => ({id: t.id, ...t.data()}));
+                    diseasesData.push(dData);
+                }
+
+                // 3. Save to Local Storage
+                const backupPayload = {
+                    timestamp: new Date().toISOString(),
+                    modules: modules,
+                    diseases: diseasesData
+                };
+                
+                localStorage.setItem('IM_AUTO_BACKUP', JSON.stringify(backupPayload));
+                
+                toast.innerText = "✅ Backup Secured (Local)";
+                setTimeout(() => toast.remove(), 2000);
+                
+            } catch(e) {
+                console.error(e);
+                toast.innerText = "❌ Backup Failed";
+                toast.style.background = "rgba(239, 68, 68, 0.9)";
+                setTimeout(() => toast.remove(), 3000);
+            }
+        }
+
+        window.restoreAutoBackup = async () => {
+            if(!isAdmin) return;
+            const raw = localStorage.getItem('IM_AUTO_BACKUP');
+            if(!raw) { alert("No auto-backup found on this device."); return; }
+            
+            const data = JSON.parse(raw);
+            const time = new Date(data.timestamp).toLocaleString();
+            
+            if(confirm(`⚠️ EMERGENCY RESTORE \n\nRestore data from: ${time}?\n\nThis will OVERWRITE the database. This process takes time.`)) {
+                const batch = writeBatch(db);
+                let opCount = 0;
+
+                const checkBatch = async () => {
+                    opCount++;
+                    if(opCount >= 450) { 
+                        await batch.commit(); 
+                        opCount = 0; 
+                        return writeBatch(db); 
+                    }
+                    return batch;
+                };
+
+                // Restore Modules
+                for(const m of data.modules) {
+                    const ref = doc(db, "app_modules", m.id);
+                    batch.set(ref, m);
+                    await checkBatch();
+                }
+
+                // Restore Diseases & Tabs
+                for(const d of data.diseases) {
+                    const dRef = doc(db, "diseases", d.id);
+                    const dClean = {...d}; 
+                    delete dClean.tabs;
+                    batch.set(dRef, dClean);
+                    await checkBatch();
+
+                    for(const t of d.tabs) {
+                        const tRef = doc(db, "diseases", d.id, "tabs", t.id);
+                        batch.set(tRef, t);
+                        await checkBatch();
+                    }
+                }
+
+                await batch.commit();
+                alert("Restore Complete. Reloading...");
+                location.reload();
+            }
+        };
+        
         // --- NEW: Smart Editor Logic ---
         function handleEditorKeydown(e) {
 
