@@ -118,7 +118,8 @@
         aside { 
             width: var(--sidebar-width); background: var(--bg-sidebar); 
             border-right: 1px solid var(--border-color); display: flex; flex-direction: column; 
-            transition: width 0.3s ease, transform 0.3s ease; z-index: 40;
+            transition: width 0.3s ease, transform 0.3s ease; 
+            z-index: 100; /* CRITICAL FIX: Sits above Header (70) */
             position: relative; overflow: hidden; white-space: nowrap;
         }
         aside.collapsed { width: 0; border: none; }
@@ -637,12 +638,13 @@
                 const listContainer = document.createElement('div');
                 listContainer.className = "disease-list";
                 if(isAdmin) {
-                    new Sortable(sortList, {
+                    new Sortable(listContainer, {
+                        group: 'diseases', 
                         animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        delay: 200, // Wait 200ms before dragging starts (allows clicking)
+                        delay: 200,
                         delayOnTouchOnly: true,
-                        onEnd: (evt) => handleTabReorder(evt)
+                        onStart: () => { els.ctxMenu.style.display = 'none'; },
+                        onEnd: (evt) => handleReorder(evt)
                     });
                 }
                 diseases.filter(d => d.category === cat).forEach(d => {
@@ -658,9 +660,11 @@
                 els.sidebarContent.appendChild(catContainer);
             });
 
+            // FIX: Allow right-click anywhere in the sidebar background
             els.sidebarContent.oncontextmenu = (e) => {
-                if(e.target === els.sidebarContent && isAdmin) {
+                if(isAdmin) { 
                     e.preventDefault();
+                    // Removed strict check so it works on headers/gaps too
                     showContextMenu(e.clientX, e.clientY, [{ label: 'Add Disease', action: () => openModal('add_disease') }]);
                 }
             };
