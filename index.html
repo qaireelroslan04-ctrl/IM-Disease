@@ -27,6 +27,57 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* --- HEADER --- */
+
+        /* Sticky Header Transitions */
+        body.scrolled header {
+            border-bottom: none; /* Seamless blend */
+        }
+        
+        /* Hide original app title/version when scrolled */
+        body.scrolled .app-title, 
+        body.scrolled .version-badge {
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+        }
+
+        /* The Disease Name (Hidden by default in header, visible when scrolled) */
+        #headerDiseaseTitle {
+            position: absolute; left: 60px; /* Aligned with where App Title was */
+            font-size: 1.1rem; font-weight: 800; color: white;
+            opacity: 0; transform: translateY(20px); transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        body.scrolled #headerDiseaseTitle {
+            opacity: 1; transform: translateY(0);
+            pointer-events: auto;
+        }
+        
+        #headerDiseaseCat {
+            font-size: 0.65rem; color: var(--accent-color); 
+            border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 6px;
+            margin-left: 8px; vertical-align: middle;
+        }
+
+        /* Move the Detail Header Up and Away */
+        .details-header {
+            transition: all 0.3s ease;
+            opacity: 1; transform: translateY(0);
+            /* Keep layout stable */
+            margin-bottom: 0;
+        }
+        body.scrolled .details-header {
+            margin-top: -80px; /* Pull it up behind header */
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Move Edit Button Down to Tabs level */
+        .edit-btn-mobile-move {
+            position: fixed; top: 75px; right: 20px; z-index: 60;
+            transition: all 0.3s ease;
+        }
+        
         header { background-color: var(--header-bg); padding: 0 1rem; height: 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); z-index: 70; flex-shrink: 0; transition: all 0.3s ease; }
         .header-left { display: flex; align-items: center; gap: 0.75rem; }
         .logo-icon { font-size: 1.2rem; cursor: pointer; }
@@ -324,7 +375,11 @@
         <div class="header-left">
             <div class="logo-icon" onclick="goHome()">⚕️</div>
             <span class="app-title" onclick="goHome()">IM Disease</span>
-            <span class="version-badge">Alpha 0.2.6</span>
+            <div id="headerDiseaseTitle">
+                <span id="headerDName"></span>
+                <span id="headerDiseaseCat"></span>
+            </div>
+            <span class="version-badge">Alpha 0.2.7</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -473,6 +528,7 @@
         let currentModuleId = null;
         let currentDiseaseId = null;
         let currentTabId = null;
+        let pendingTabId = null; // Fix for race condition
         let modules = [];
         let diseases = [];
         let categories = []; 
@@ -581,10 +637,12 @@
                 const listContainer = document.createElement('div');
                 listContainer.className = "disease-list";
                 if(isAdmin) {
-                    new Sortable(listContainer, {
-                        group: 'diseases', animation: 150, delay: 700, delayOnTouchOnly: true,
-                        onStart: () => { els.ctxMenu.style.display = 'none'; },
-                        onEnd: (evt) => handleReorder(evt)
+                    new Sortable(sortList, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        delay: 200, // Wait 200ms before dragging starts (allows clicking)
+                        delayOnTouchOnly: true,
+                        onEnd: (evt) => handleTabReorder(evt)
                     });
                 }
                 diseases.filter(d => d.category === cat).forEach(d => {
@@ -646,16 +704,27 @@
         };
 
         function handleScroll(e) {
-            const mainTitle = document.querySelector('.app-title');
-            const originalTitle = "IM Disease";
-            const targetTitle = document.getElementById('note-title').value; 
+            const scrollTop = e.target.scrollTop;
+            const threshold = 60; // Approx height of header
+            
+            // Get Elements
+            const dName = document.getElementById('detailTitle').innerText;
+            const dCat = document.getElementById('detailCat').innerText;
+            const editBtn = document.getElementById('editToggleBtn');
 
-            if (e.target.scrollTop > 60) {
-                mainTitle.innerText = targetTitle; 
-                mainTitle.style.color = "white";
+            if (scrollTop > threshold) {
+                document.body.classList.add('scrolled');
+                
+                // Update Header Data
+                document.getElementById('headerDName').innerText = dName;
+                document.getElementById('headerDiseaseCat').innerText = dCat;
+                
+                // Move Edit Button to Tab Row (Visual Hack)
+                // We physically move the DOM node or just use fixed positioning via CSS class
+                editBtn.classList.add('edit-btn-mobile-move');
             } else {
-                mainTitle.innerText = originalTitle; 
-                mainTitle.style.color = "var(--accent-color)";
+                document.body.classList.remove('scrolled');
+                editBtn.classList.remove('edit-btn-mobile-move');
             }
         }
 
@@ -810,22 +879,54 @@
         }
 
         async function switchTab(tab) {
-            if(currentDiseaseId && currentTabId) await saveNoteContent(currentDiseaseId);
+            // Prevent clicking the same tab twice
+            if(currentTabId === tab.id) return;
+            
+            // 1. Critical: Save the OLD tab content before switching
+            // Use currentTabId because 'tab' is the NEW destination
+            if(currentDiseaseId && currentTabId) {
+                await saveNoteContent(currentDiseaseId);
+            }
 
+            // 2. Lock the target
             currentTabId = tab.id;
+            pendingTabId = tab.id;
+
+            // 3. UI: Update Active Pill Immediately
             const pills = document.querySelectorAll(".tab-pill");
             pills.forEach(p => p.classList.remove("active"));
-            for(let p of pills) { if(p.innerText === tab.title) p.classList.add("active"); }
+            for(let p of pills) { 
+                if(p.innerText === tab.title) p.classList.add("active"); 
+            }
 
-            const docSnap = await getDoc(doc(db, "diseases", currentDiseaseId, "tabs", tab.id));
-            const content = docSnap.exists() ? docSnap.data().content : "";
-            
-            document.getElementById('editor').innerHTML = content || 
-                '<div class="placeholder-text">Tap Edit <span style="font-style:normal">✎</span> then <b>+</b> to add a Clinical Box</div>';
-            
-            attachBoxListeners(); 
-            toggleEditMode(); toggleEditMode(); 
-            document.getElementById('editor').scrollTop = 0;
+            // 4. Load Data
+            try {
+                const docRef = doc(db, "diseases", currentDiseaseId, "tabs", tab.id);
+                const docSnap = await getDoc(docRef);
+                
+                // RACE CONDITION CHECK:
+                // If the user clicked another tab while this fetch was happening, ABORT.
+                if(pendingTabId !== tab.id) return;
+
+                const content = docSnap.exists() ? docSnap.data().content : "";
+                
+                document.getElementById('editor').innerHTML = content || 
+                    '<div class="placeholder-text">Tap Edit <span style="font-style:normal">✎</span> then <b>+</b> to add a Clinical Box</div>';
+                
+                // Re-init editor state
+                attachBoxListeners();
+                
+                // Reset scroll
+                document.getElementById('editor').scrollTop = 0;
+                
+                // Ensure edit mode UI is consistent
+                if(isEditMode) {
+                    // Re-apply editable attributes if we are in edit mode
+                    toggleEditMode(); toggleEditMode(); 
+                }
+            } catch(err) {
+                console.error("Tab Load Error", err);
+            }
         }
 
         // --- EDITOR LOGIC ---
@@ -1411,15 +1512,65 @@
             }
         });
 
-        window.exportData = () => {
+        window.exportData = async () => {
             if(!isAdmin) { alert("Admin only."); return; }
-            const data = { modules: modules, diseases: diseases, exportedAt: new Date() };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `IM_Backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
+            
+            // UI Feedback
+            const toast = document.createElement('div');
+            toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2563eb; color:white; padding:10px 20px; border-radius:20px; z-index:9999; font-size:0.9rem; box-shadow:0 4px 15px rgba(0,0,0,0.3);";
+            toast.innerText = "📦 Packaging Full Database... (This may take a moment)";
+            document.body.appendChild(toast);
+
+            try {
+                // 1. Fetch ALL Modules
+                const modSnap = await getDocs(collection(db, "app_modules"));
+                const modules = modSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+                // 2. Fetch ALL Diseases
+                const disSnap = await getDocs(collection(db, "diseases"));
+                const diseasesData = [];
+
+                // 3. Deep Fetch Tabs for EACH Disease
+                for (const dDoc of disSnap.docs) {
+                    const dData = { id: dDoc.id, ...dDoc.data(), tabs: [] };
+                    
+                    // Sub-collection Fetch
+                    const tabsRef = collection(db, "diseases", dDoc.id, "tabs");
+                    const tabsSnap = await getDocs(tabsRef);
+                    dData.tabs = tabsSnap.docs.map(t => ({id: t.id, ...t.data()}));
+                    
+                    diseasesData.push(dData);
+                }
+
+                // 4. Construct Final Object
+                const exportObj = {
+                    version: "0.2.7",
+                    exportedAt: new Date().toISOString(),
+                    user: auth.currentUser.email,
+                    modules: modules,
+                    diseases: diseasesData
+                };
+
+                // 5. Trigger Download
+                const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type : 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `IM_Full_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                toast.innerText = "✅ Export Complete! File Downloaded.";
+                toast.style.background = "#10b981";
+                setTimeout(() => toast.remove(), 3000);
+
+            } catch(e) {
+                console.error("Export Error:", e);
+                toast.innerText = "❌ Export Failed. Check Console.";
+                toast.style.background = "#ef4444";
+                setTimeout(() => toast.remove(), 4000);
+            }
         };
 
         window.triggerImport = () => document.getElementById('importFile').click();
@@ -1433,16 +1584,75 @@
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if(confirm(`Import ${data.diseases.length} diseases? This will merge with existing data.`)) {
-                        // Batch write logic would go here. For Alpha, we alert success.
-                        alert("Import logic connected. (Data merging requires complex batching logic implemented next update)");
+                    
+                    // Basic Validation
+                    if(!data.modules || !data.diseases) { 
+                        alert("Error: Invalid Backup File Structure."); 
+                        input.value = '';
+                        return; 
                     }
-                } catch(err) { alert("Invalid JSON"); }
+
+                    const confirmMsg = `⚠️ FULL IMPORT WARNING\n\nThis will merge/update:\n• ${data.modules.length} Modules\n• ${data.diseases.length} Diseases (and all Tabs)\n\nExisting data with the same IDs will be OVERWRITTEN.\n\nAre you sure?`;
+                    
+                    if(confirm(confirmMsg)) {
+                        const toast = document.createElement('div');
+                        toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2563eb; color:white; padding:10px 20px; border-radius:20px; z-index:9999; font-size:0.9rem;";
+                        toast.innerText = "⏳ Importing Data... Do not close.";
+                        document.body.appendChild(toast);
+
+                        // Batch Handler to respect Firestore 500-op limit
+                        const batchHandler = {
+                            batch: writeBatch(db),
+                            count: 0,
+                            async add(ref, docData) {
+                                this.batch.set(ref, docData, {merge: true}); // Merge prevents destroying un-exported fields
+                                this.count++;
+                                if (this.count >= 450) { 
+                                    await this.batch.commit();
+                                    this.batch = writeBatch(db);
+                                    this.count = 0;
+                                }
+                            },
+                            async flush() { 
+                                if (this.count > 0) await this.batch.commit(); 
+                            }
+                        };
+
+                        // 1. Import Modules
+                        for(const m of data.modules) {
+                            await batchHandler.add(doc(db, "app_modules", m.id), m);
+                        }
+
+                        // 2. Import Diseases & Tabs (Deep Import)
+                        for(const d of data.diseases) {
+                            // Separate parent data from tab sub-collection data
+                            const dClean = {...d}; 
+                            delete dClean.tabs; // Don't save the tabs array into the disease doc itself
+                            
+                            await batchHandler.add(doc(db, "diseases", d.id), dClean);
+
+                            // Restore Tabs Sub-collection
+                            if(d.tabs && Array.isArray(d.tabs)) {
+                                for(const t of d.tabs) {
+                                    await batchHandler.add(doc(db, "diseases", d.id, "tabs", t.id), t);
+                                }
+                            }
+                        }
+
+                        await batchHandler.flush();
+                        
+                        toast.innerText = "✅ Import Successful! Reloading app...";
+                        toast.style.background = "#10b981";
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } catch(err) { 
+                    console.error("Import Error:", err); 
+                    alert("Critical Error importing file: " + err.message); 
+                }
             };
             reader.readAsText(file);
-            input.value = '';
+            input.value = ''; // Reset input so same file can be selected again
         };
-
         async function handleTabReorder(evt) {
             const items = evt.to.querySelectorAll('.tab-pill');
             const batch = writeBatch(db);
