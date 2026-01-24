@@ -30,7 +30,7 @@
 
         /* Sticky Header Transitions */
         body.scrolled header {
-            border-bottom: none; /* Seamless blend */
+            border-bottom: 1px solid var(--border-color); /* Fix E: Added Line */
         }
         
         /* Hide original app title/version when scrolled */
@@ -43,8 +43,10 @@
 
         /* The Disease Name (Hidden by default in header, visible when scrolled) */
         #headerDiseaseTitle {
-            position: absolute; left: 60px; /* Aligned with where App Title was */
-            font-size: 1.1rem; font-weight: 800; color: white;
+            position: absolute; left: 60px; 
+            /* Fix B: Constraint width so it doesn't hit Admin/Profile buttons */
+            right: 120px; 
+            height: 100%; display: flex; flex-direction: column; justify-content: center;
             opacity: 0; transform: translateY(20px); transition: all 0.3s ease;
             pointer-events: none;
         }
@@ -53,23 +55,37 @@
             pointer-events: auto;
         }
         
+        #headerDName { 
+            font-size: 1rem; font-weight: 800; color: white;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Fix B: Ellipsis */
+        }
         #headerDiseaseCat {
             font-size: 0.65rem; color: var(--accent-color); 
-            border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 6px;
-            margin-left: 8px; vertical-align: middle;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin: 0; padding: 0; border: none; /* Cleaner look */
         }
 
         /* Move the Detail Header Up and Away */
         .details-header {
             transition: all 0.3s ease;
             opacity: 1; transform: translateY(0);
-            /* Keep layout stable */
             margin-bottom: 0;
         }
         body.scrolled .details-header {
-            margin-top: -80px; /* Pull it up behind header */
+            /* Fix E: Reduce gap (pull it up higher) */
+            margin-top: -95px; 
             opacity: 0;
             pointer-events: none;
+        }
+        
+        /* Move Edit Button Down to Tabs level */
+        .edit-btn-mobile-move {
+            position: fixed; top: 75px; right: 20px; z-index: 60;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            #headerDiseaseTitle { right: 70px; /* More space on mobile */ }
         }
         
         /* Move Edit Button Down to Tabs level */
@@ -157,6 +173,7 @@
         .tabs-container { 
             padding: 10px 2rem; border-bottom: 1px solid var(--border-color); 
             display: flex; gap: 10px; overflow-x: auto; background: var(--bg-body);
+            touch-action: pan-x; /* Fixes mobile scrolling */
         }
         .tab-pill {
             padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
@@ -380,7 +397,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.2.8</span>
+            <span class="version-badge">Alpha 0.2.9</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -611,6 +628,11 @@
             currentModuleId = id;
             els.homeView.style.display = 'none';
             els.appView.style.display = 'flex';
+            
+            // Fix C & D: Ensure clean slate when changing modules
+            els.caseDetails.style.display = 'none';
+            els.welcomeMsg.style.display = 'block';
+            
             if(window.innerWidth <= 768) toggleSidebar(true);
             els.sidebarContent.innerHTML = '<div style="padding:20px;text-align:center;color:#666">Loading...</div>';
             loadDiseases();
@@ -638,6 +660,7 @@
                 const listContainer = document.createElement('div');
                 listContainer.className = "disease-list";
                 if(isAdmin) {
+                    // FIX: Variable must be 'listContainer', not 'sortList'
                     new Sortable(listContainer, {
                         group: 'diseases', 
                         animation: 150,
@@ -675,6 +698,12 @@
             currentModuleId = null;
             els.appView.style.display = 'none';
             els.homeView.style.display = 'flex';
+            
+            // Fix C & D: Reset App State
+            document.body.classList.remove('scrolled');
+            document.getElementById('editToggleBtn').classList.remove('edit-btn-mobile-move');
+            els.caseDetails.style.display = 'none';
+            els.welcomeMsg.style.display = 'block';
         };
 
         window.toggleRetract = () => {
@@ -819,6 +848,8 @@
                 new Sortable(sortList, {
                     animation: 150,
                     ghostClass: 'sortable-ghost',
+                    delay: 300, // Fix A: Increased wait time so taps work reliably
+                    delayOnTouchOnly: true,
                     onEnd: (evt) => handleTabReorder(evt)
                 });
             }
