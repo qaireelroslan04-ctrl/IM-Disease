@@ -1381,7 +1381,6 @@
                 const div = document.createElement('div');
                 div.className = `ctx-item ${item.class || ''}`;
                 div.innerText = item.label;
-                if(item.style) div.style = item.style; // Support custom colors
                 div.onclick = () => { els.ctxMenu.style.display = 'none'; item.action(); };
                 els.ctxMenu.appendChild(div);
             });
@@ -1628,25 +1627,24 @@
                 try {
                     const data = JSON.parse(e.target.result);
 
-                    // Validate Structure (Must have Name + Tabs)
+                    // Validate Structure
                     if(!data.name || !data.tabs || !Array.isArray(data.tabs)) {
-                        alert("Invalid NotebookLM JSON format.\nMissing 'name' or 'tabs' array.");
+                        alert("Invalid NotebookLM JSON format.");
                         return;
                     }
 
-                    if(confirm(`Import Disease: "${data.name}" into this section?`)) {
+                    if(confirm(`Import Disease: "${data.name}" into "${data.category || 'General'}"?`)) {
                         const toast = document.createElement('div');
                         toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2563eb; color:white; padding:10px 20px; border-radius:20px; z-index:9999;";
-                        toast.innerText = "✨ Importing Content...";
+                        toast.innerText = "✨ Importing NotebookLM Content...";
                         document.body.appendChild(toast);
 
                         // 1. Create the Disease Document
                         const diseasePayload = {
                             name: data.name,
-                            category: data.category || "Imported",
+                            category: data.category || "Uncategorized",
                             moduleId: currentModuleId, // Adds to current open section
-                            searchIndex: data.name.toLowerCase(),
-                            order: Date.now() // Put at bottom
+                            searchIndex: data.name.toLowerCase()
                         };
                         
                         const docRef = await addDoc(collection(db, "diseases"), diseasePayload);
@@ -1669,7 +1667,11 @@
 
                         toast.innerText = "✅ Import Complete!";
                         toast.style.background = "#10b981";
-                        setTimeout(() => toast.remove(), 2000);
+                        setTimeout(() => {
+                            toast.remove();
+                            // Optional: Automatically switch to the new disease
+                            // selectDisease({id: newDiseaseId, ...diseasePayload}); 
+                        }, 2000);
                     }
                 } catch(err) {
                     console.error(err);
