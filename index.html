@@ -52,7 +52,7 @@
         }
         body.scrolled #headerDiseaseTitle {
             opacity: 1; transform: translateY(0);
-            pointer-events: auto;
+            pointer-events: none; /* FIX BUG 1: Ensure unclickable overlay doesn't block interaction */
         }
         
         #headerDName { 
@@ -85,7 +85,7 @@
         }
 
         @media (max-width: 768px) {
-            #headerDiseaseTitle { right: 70px; /* More space on mobile */ }
+            #headerDiseaseTitle { right: 150px; /* FIX BUG 6: Prevent overlap with Admin/Avatar */ }
         }
         
         /* Move Edit Button Down to Tabs level */
@@ -397,7 +397,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.2.10</span>
+            <span class="version-badge">Alpha 0.2.11</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -665,7 +665,7 @@
                     new Sortable(listContainer, {
                         group: 'diseases', 
                         animation: 150,
-                        delay: 200,
+                        delay: 800, // FIX BUG 4: Increase delay to prevent move conflict
                         delayOnTouchOnly: true,
                         onStart: () => { els.ctxMenu.style.display = 'none'; },
                         onEnd: (evt) => handleReorder(evt)
@@ -742,26 +742,18 @@
 
         function handleScroll(e) {
             const scrollTop = e.target.scrollTop;
-            const threshold = 60; // Approx height of header
+            const isScrolled = document.body.classList.contains('scrolled');
             
-            // Get Elements
-            const dName = document.getElementById('detailTitle').innerText;
-            const dCat = document.getElementById('detailCat').innerText;
-            const editBtn = document.getElementById('editToggleBtn');
-
-            if (scrollTop > threshold) {
+            // FIX BUG 5: Scroll Hysteresis (Buffer)
+            // Add at 60px, remove only if back above 40px
+            if (!isScrolled && scrollTop > 60) {
                 document.body.classList.add('scrolled');
-                
-                // Update Header Data
-                document.getElementById('headerDName').innerText = dName;
-                document.getElementById('headerDiseaseCat').innerText = dCat;
-                
-                // Move Edit Button to Tab Row (Visual Hack)
-                // We physically move the DOM node or just use fixed positioning via CSS class
-                editBtn.classList.add('edit-btn-mobile-move');
-            } else {
+                document.getElementById('headerDName').innerText = document.getElementById('detailTitle').innerText;
+                document.getElementById('headerDiseaseCat').innerText = document.getElementById('detailCat').innerText;
+                document.getElementById('editToggleBtn').classList.add('edit-btn-mobile-move');
+            } else if (isScrolled && scrollTop < 40) {
                 document.body.classList.remove('scrolled');
-                editBtn.classList.remove('edit-btn-mobile-move');
+                document.getElementById('editToggleBtn').classList.remove('edit-btn-mobile-move');
             }
         }
 
@@ -770,6 +762,9 @@
             if(currentDiseaseId && currentTabId) {
                 saveNoteContent(currentDiseaseId);
             }
+
+            // FIX BUG 2: Reset scroll when entering new disease
+            document.getElementById('contentArea').scrollTop = 0;
 
             currentDiseaseId = data.id;
             currentTabId = null;
@@ -796,8 +791,8 @@
             contentArea.removeEventListener('scroll', handleScroll);
             
             // Reset Header immediately
-            document.querySelector('.app-title').innerText = "IM Disease";
-            document.querySelector('.app-title').style.color = "var(--accent-color)";
+            document.body.classList.remove('scrolled'); // Ensure class removed on switch
+            document.getElementById('editToggleBtn').classList.remove('edit-btn-mobile-move');
             
             // Add the new listener
             contentArea.addEventListener('scroll', handleScroll);
@@ -839,6 +834,9 @@
         
         function renderTabs(tabs) {
             const container = els.tabsContainer;
+            // FIX BUG 3: Capture scroll before DOM rebuild
+            const previousScroll = container.scrollLeft;
+            
             container.innerHTML = "";
             
             // Create a wrapper specifically for sortable items
@@ -852,7 +850,7 @@
                 new Sortable(sortList, {
                     animation: 150,
                     ghostClass: 'sortable-ghost',
-                    delay: 300, // Fix A: Increased wait time so taps work reliably
+                    delay: 800, // FIX BUG 4: Increase delay
                     delayOnTouchOnly: true,
                     onEnd: (evt) => handleTabReorder(evt)
                 });
@@ -887,6 +885,9 @@
                 addBtn.onclick = () => promptAddTab();
                 container.appendChild(addBtn);
             }
+            
+            // FIX BUG 3: Restore scroll
+            container.scrollLeft = previousScroll;
         }
 
         async function promptAddTab() {
@@ -1359,7 +1360,7 @@
             };
             let timer;
             el.addEventListener('touchstart', (e) => {
-                timer = setTimeout(() => { showMenuForType(e.touches[0].clientX, e.touches[0].clientY, type, data); }, 200); 
+                timer = setTimeout(() => { showMenuForType(e.touches[0].clientX, e.touches[0].clientY, type, data); }, 300); // FIX BUG 4: Increase time
             });
             el.addEventListener('touchmove', () => clearTimeout(timer));
             el.addEventListener('touchend', () => clearTimeout(timer));
