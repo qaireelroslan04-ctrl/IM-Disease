@@ -397,7 +397,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.2.11</span>
+            <span class="version-badge">Alpha 0.2.12</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -410,7 +410,7 @@
                     <div onclick="triggerImport()" class="ctx-item">Import Data</div>
                     <div onclick="restoreAutoBackup()" class="ctx-item" style="color:#3b82f6;">↺ Restore Auto-Save</div>
                     <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-                    <div onclick="handleAuth()" class="ctx-item" style="color:#ef4444;">Log Out</div>
+                    <div id="authActionBtn" onclick="handleAuth()" class="ctx-item" style="color:#ef4444;">Log Out</div>
                 </div>
             </div>
             
@@ -447,7 +447,7 @@
                             <div id="detailCat" class="cat-badge">CATEGORY</div>
                             <div id="detailTitle" class="main-title">Disease Name</div>
                         </div>
-                        <button id="editToggleBtn" class="icon-btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" onclick="toggleEditMode()" title="Edit Note">
+                        <button id="editToggleBtn" class="icon-btn" style="display:none;background:none;border:none;color:var(--text-muted);cursor:pointer;" onclick="toggleEditMode()" title="Edit Note">
                             <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
                     </div>
@@ -585,17 +585,37 @@
         }
 
         onAuthStateChanged(auth, (user) => {
-            if (user && user.email === ADMIN_EMAIL) {
-                isAdmin = true;
-                startAutoBackup();
-                if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'block';
-                if(els.homeFab) els.homeFab.style.display = 'flex'; 
+            const authBtn = document.getElementById('authActionBtn');
+            const editBtn = document.getElementById('editToggleBtn');
+
+            if (user) {
+                // 1. User is Logged In (Student OR Admin)
+                if(authBtn) { authBtn.innerText = "Log Out"; authBtn.style.color = "#ef4444"; }
+                if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = user.photoURL;
+                
+                // Rule 3: Allow Update (Edit Button) for ANY logged in user
+                if(editBtn) editBtn.style.display = 'block';
+
+                // 2. Check if Admin (Rule 2)
+                if (user.email === ADMIN_EMAIL) {
+                    isAdmin = true;
+                    startAutoBackup();
+                    if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'block';
+                    if(els.homeFab) els.homeFab.style.display = 'flex'; 
+                } else {
+                    isAdmin = false;
+                    if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'none';
+                    if(els.homeFab) els.homeFab.style.display = 'none';
+                }
             } else {
+                // 3. Guest Mode (Read Only)
                 isAdmin = false;
+                if(authBtn) { authBtn.innerText = "Log In"; authBtn.style.color = "#3b82f6"; }
+                if(editBtn) editBtn.style.display = 'none'; // Hide edit button
                 if(document.getElementById('adminBadge')) document.getElementById('adminBadge').style.display = 'none';
                 if(els.homeFab) els.homeFab.style.display = 'none';
+                if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = "https://ui-avatars.com/api/?name=U&background=171717&color=fff";
             }
-            if(user && document.getElementById('userAvatar')) document.getElementById('userAvatar').src = user.photoURL;
             loadModules();
         });
 
@@ -1584,7 +1604,7 @@
 
                 // 4. Construct Final Object
                 const exportObj = {
-                    version: "0.2.7",
+                    version: "0.2.12",
                     exportedAt: new Date().toISOString(),
                     user: auth.currentUser.email,
                     modules: modules,
