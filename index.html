@@ -559,7 +559,8 @@
         let isEditMode = false;
         let saveTimeout;
         let isCreatingTab = false;
-        
+        let isAuthProcessing = false; // Fix: Prevent double-click/ghost-click
+
         // ADD THIS LINE BELOW:
         let tabsUnsubscribe = null;
 
@@ -584,9 +585,23 @@
         };
 
         // --- AUTH ---
-        window.handleAuth = () => {
-            if (auth.currentUser) signOut(auth);
-            else signInWithPopup(auth, provider).catch((error) => { alert("Login Failed: " + error.message); console.error(error); });
+        window.handleAuth = async () => {
+            if (isAuthProcessing) return; // Block double clicks
+            isAuthProcessing = true;
+            document.getElementById('profileMenu').style.display = 'none'; // Close UI immediately
+
+            try {
+                if (auth.currentUser) {
+                    await signOut(auth);
+                } else {
+                    await signInWithPopup(auth, provider);
+                }
+            } catch (error) {
+                alert("Action Failed: " + error.message);
+                console.error(error);
+            } finally {
+                isAuthProcessing = false; // Release lock
+            }
         }
 
         onAuthStateChanged(auth, (user) => {
