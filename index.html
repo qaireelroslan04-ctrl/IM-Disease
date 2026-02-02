@@ -403,7 +403,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.3.3</span>
+            <span class="version-badge">Alpha 0.3.4</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -416,7 +416,7 @@
                     <div onclick="triggerImport()" class="ctx-item">Import Data</div>
                     <div onclick="restoreAutoBackup()" class="ctx-item" style="color:#3b82f6;">↺ Restore Auto-Save</div>
                     <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-                    <div id="authActionBtn" onclick="handleAuth()" class="ctx-item" style="color:#3b82f6;">Log In</div>
+                    <div id="authActionBtn" onclick="handleAuth(event)" class="ctx-item" style="color:#3b82f6;">Log In</div>
                 </div>
             </div>
             
@@ -585,7 +585,8 @@
         };
 
         // --- AUTH ---
-        window.handleAuth = async () => {
+        window.handleAuth = async (e) => {
+            if (e) { e.stopPropagation(); }
             if (isAuthProcessing) return;
             isAuthProcessing = true;
             document.getElementById('profileMenu').style.display = 'none';
