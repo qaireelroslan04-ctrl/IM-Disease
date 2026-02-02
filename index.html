@@ -403,7 +403,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.3.0</span>
+            <span class="version-badge">Alpha 0.3.1</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -593,7 +593,7 @@
             try {
                 if (auth.currentUser) {
                     await signOut(auth);
-                    location.reload(); // FIXED: Force reload to clear session memory
+                    setTimeout(() => location.reload(), 500); // Wait 500ms for storage to clear
                 } else {
                     await signInWithPopup(auth, provider);
                     // No reload needed for Sign In (Observer handles it)
