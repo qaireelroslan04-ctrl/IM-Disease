@@ -586,21 +586,22 @@
 
         // --- AUTH ---
         window.handleAuth = async () => {
-            if (isAuthProcessing) return; // Block double clicks
+            if (isAuthProcessing) return; 
             isAuthProcessing = true;
-            document.getElementById('profileMenu').style.display = 'none'; // Close UI immediately
+            document.getElementById('profileMenu').style.display = 'none'; 
 
             try {
                 if (auth.currentUser) {
                     await signOut(auth);
+                    location.reload(); // FIXED: Force reload to clear session memory
                 } else {
                     await signInWithPopup(auth, provider);
+                    // No reload needed for Sign In (Observer handles it)
                 }
             } catch (error) {
                 alert("Action Failed: " + error.message);
                 console.error(error);
-            } finally {
-                isAuthProcessing = false; // Release lock
+                isAuthProcessing = false;
             }
         }
 
