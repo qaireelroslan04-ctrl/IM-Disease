@@ -490,8 +490,6 @@
                         <button class="fmt-btn" onclick="triggerImage()" title="Insert Image">🖼️</button>
                         <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
                         
-                        <span style="width:1px; background:var(--border-color); height:16px; margin:0 5px;"></span>
-                        
                         <button class="fmt-btn" onclick="insertVideo()" title="YouTube">▶</button>
                         <button class="fmt-btn" onclick="insertTable()" title="Insert Table">▦</button>
                         <button class="fmt-btn" onclick="cleanLaTeX()" title="Clean LaTeX">✨</button>
@@ -588,7 +586,7 @@
         // --- AUTH ---
         window.handleAuth = () => {
             if (auth.currentUser) signOut(auth).then(()=>location.reload());
-            else signInWithPopup(auth, provider);
+            else signInWithPopup(auth, provider).catch((error) => { alert("Login Failed: " + error.message); console.error(error); });
         }
 
         onAuthStateChanged(auth, (user) => {
