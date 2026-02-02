@@ -403,7 +403,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.2.13</span>
+            <span class="version-badge">Alpha 0.3.0</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -585,7 +585,7 @@
 
         // --- AUTH ---
         window.handleAuth = () => {
-            if (auth.currentUser) signOut(auth).then(()=>location.reload());
+            if (auth.currentUser) signOut(auth);
             else signInWithPopup(auth, provider).catch((error) => { alert("Login Failed: " + error.message); console.error(error); });
         }
 
@@ -596,7 +596,7 @@
             if (user) {
                 // 1. User is Logged In (Student OR Admin)
                 if(authBtn) { authBtn.innerText = "Log Out"; authBtn.style.color = "#ef4444"; }
-                if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = user.photoURL;
+                if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = user.photoURL || "https://ui-avatars.com/api/?name=U&background=171717&color=fff";
                 
                 // Rule 3: Allow Update (Edit Button) for ANY logged in user
                 if(editBtn) editBtn.style.display = 'block';
