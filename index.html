@@ -152,6 +152,7 @@
             transition: background 0.2s;
         }
         .category-header:hover { background: var(--bg-input); }
+        .category-header { pointer-events: auto; } /* Ensure header remains clickable but not draggable */
         .category-chevron {
             font-size: 0.8rem; transition: transform 0.2s; display: inline-block;
         }
@@ -412,7 +413,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.4.3</span>
+            <span class="version-badge">Alpha 0.4.4</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -751,6 +752,8 @@
                         animation: 150,
                         delay: 800,
                         delayOnTouchOnly: true,
+                        filter: '.category-header', // Prevent dragging category headers
+                        draggable: '.disease-item', // Only allow disease items to be dragged
                         onStart: () => { els.ctxMenu.style.display = 'none'; },
                         onEnd: (evt) => handleReorder(evt)
                     });
