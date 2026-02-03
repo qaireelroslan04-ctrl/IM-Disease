@@ -148,7 +148,16 @@
         .category-header { 
             font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; 
             padding: 10px 15px; letter-spacing: 1px; user-select: none;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
         }
+        .category-header:hover { background: var(--bg-input); }
+        .category-chevron {
+            font-size: 0.8rem; transition: transform 0.2s; display: inline-block;
+        }
+        .category-chevron.collapsed { transform: rotate(-90deg); }
+        .disease-list { transition: max-height 0.3s ease, opacity 0.2s ease; overflow: hidden; }
+        .disease-list.collapsed { max-height: 0 !important; opacity: 0; }
         .disease-item {
             padding: 10px 15px; cursor: pointer; border-left: 3px solid transparent; 
             font-size: 0.9rem; color: var(--text-main); transition: background 0.2s;
@@ -403,7 +412,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.3.4</span>
+            <span class="version-badge">Alpha 0.4.0</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -692,26 +701,59 @@
 
         function renderSidebar() {
             els.sidebarContent.innerHTML = "";
-            categories = [...new Set(diseases.map(d => d.category))].sort();
-
+            
+            // Get collapse states from localStorage
+            const collapseStates = JSON.parse(localStorage.getItem('categoryCollapseStates') || '{}');
+            
+            // Sort categories by stored order if exists
+            const categoryOrder = JSON.parse(localStorage.getItem('categoryOrder') || '[]');
+            categories = [...new Set(diseases.map(d => d.category))];
+            
+            if(categoryOrder.length > 0) {
+                categories.sort((a, b) => {
+                    const indexA = categoryOrder.indexOf(a);
+                    const indexB = categoryOrder.indexOf(b);
+                    if(indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if(indexA === -1) return 1;
+                    if(indexB === -1) return -1;
+                    return indexA - indexB;
+                });
+            } else {
+                categories.sort();
+            }
+            
             categories.forEach(cat => {
                 const catContainer = document.createElement('div');
                 catContainer.className = "category-group";
-                catContainer.innerHTML = `<div class="category-header">${cat}</div>`;
+                catContainer.dataset.category = cat;
+                
+                const isCollapsed = collapseStates[cat] === true;
+                
+                const header = document.createElement('div');
+                header.className = "category-header";
+                header.innerHTML = `
+                    <span>${cat}</span>
+                    <span class="category-chevron ${isCollapsed ? 'collapsed' : ''}">▼</span>
+                `;
+                header.onclick = () => toggleCategory(cat, header);
+                
+                catContainer.appendChild(header);
                 
                 const listContainer = document.createElement('div');
-                listContainer.className = "disease-list";
+                listContainer.className = `disease-list ${isCollapsed ? 'collapsed' : ''}`;
+                listContainer.style.maxHeight = isCollapsed ? '0' : 'none';
+                
                 if(isAdmin) {
-                    // FIX: Variable must be 'listContainer', not 'sortList'
                     new Sortable(listContainer, {
                         group: 'diseases', 
                         animation: 150,
-                        delay: 800, // FIX BUG 4: Increase delay to prevent move conflict
+                        delay: 800,
                         delayOnTouchOnly: true,
                         onStart: () => { els.ctxMenu.style.display = 'none'; },
                         onEnd: (evt) => handleReorder(evt)
                     });
                 }
+                
                 diseases.filter(d => d.category === cat).forEach(d => {
                     const item = document.createElement('div');
                     item.className = `disease-item ${currentDiseaseId === d.id ? 'active' : ''}`;
@@ -721,22 +763,60 @@
                     setupContextTrigger(item, 'disease', d);
                     listContainer.appendChild(item);
                 });
+                
                 catContainer.appendChild(listContainer);
                 els.sidebarContent.appendChild(catContainer);
             });
-
-            // FIX: Allow right-click anywhere in the sidebar background
+            
+            // Enable category dragging for admins
+            if(isAdmin) {
+                new Sortable(els.sidebarContent, {
+                    animation: 150,
+                    handle: '.category-header',
+                    delay: 800,
+                    delayOnTouchOnly: true,
+                    onEnd: (evt) => handleCategoryReorder(evt)
+                });
+            }
+            
             els.sidebarContent.oncontextmenu = (e) => {
                 if(isAdmin) { 
                     e.preventDefault();
                     showContextMenu(e.clientX, e.clientY, [
                         { label: 'Add Disease', action: () => openModal('add_disease') },
-                        // NEW OPTION
                         { label: 'Import File (NotebookLM)', action: () => triggerNotebookImport(), style: 'color:#3b82f6;' },
                         { label: 'Paste JSON (NotebookLM)', action: () => openModal('paste_json'), style: 'color:#3b82f6;' }
                     ]);
                 }
             };
+        }
+
+        function toggleCategory(categoryName, headerElement) {
+            const chevron = headerElement.querySelector('.category-chevron');
+            const listContainer = headerElement.nextElementSibling;
+            
+            const isCollapsed = listContainer.classList.contains('collapsed');
+            
+            if(isCollapsed) {
+                listContainer.classList.remove('collapsed');
+                chevron.classList.remove('collapsed');
+                listContainer.style.maxHeight = 'none';
+            } else {
+                listContainer.classList.add('collapsed');
+                chevron.classList.add('collapsed');
+                listContainer.style.maxHeight = '0';
+            }
+            
+            // Save state
+            const states = JSON.parse(localStorage.getItem('categoryCollapseStates') || '{}');
+            states[categoryName] = !isCollapsed;
+            localStorage.setItem('categoryCollapseStates', JSON.stringify(states));
+        }
+        
+        function handleCategoryReorder(evt) {
+            const categoryGroups = els.sidebarContent.querySelectorAll('.category-group');
+            const newOrder = Array.from(categoryGroups).map(g => g.dataset.category);
+            localStorage.setItem('categoryOrder', JSON.stringify(newOrder));
         }
 
         // --- CORE UI ---
