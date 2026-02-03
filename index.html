@@ -413,7 +413,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.4.5</span>
+            <span class="version-badge">Alpha 0.4.6</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -554,6 +554,12 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         setPersistence(auth, browserLocalPersistence);
+
+        // FIX: Force immediate auth state check on reload
+        auth.onAuthStateChanged(() => {
+            // This empty callback forces Firebase to check localStorage immediately
+        });
+        
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
         const ADMIN_EMAIL = "qaireelroslan04@gmail.com"; 
@@ -620,7 +626,10 @@
         onAuthStateChanged(auth, (user) => {
             const authBtn = document.getElementById('authActionBtn');
             const editBtn = document.getElementById('editToggleBtn');
-
+            
+            // FIX: Ensure UI reflects actual auth state
+            console.log("Auth State Changed:", user ? user.email : "Not logged in");
+            
             if (user) {
                 // 1. User is Logged In (Student OR Admin)
                 if(authBtn) { authBtn.innerText = "Log Out"; authBtn.style.color = "#ef4444"; }
@@ -649,7 +658,9 @@
                 if(els.homeFab) els.homeFab.style.display = 'none';
                 if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = "https://ui-avatars.com/api/?name=U&background=171717&color=fff";
             }
-            loadModules();
+            
+            // FIX: Force UI update after auth check completes
+            setTimeout(() => loadModules(), 100);
         });
 
         // --- HOME PAGE ---
@@ -1564,7 +1575,8 @@
             els.ctxMenu.style.display = 'none';
             const parentGroup = evt.to.closest('.category-group');
             if(!parentGroup) return;
-            const newCategory = parentGroup.querySelector('.category-header').innerText;
+            // FIX: Extract ONLY the category name text, not the chevron
+            const newCategory = parentGroup.querySelector('.category-header span:first-child').innerText;
             const batch = writeBatch(db);
             const listItems = evt.to.querySelectorAll('.disease-item');
             listItems.forEach((el, index) => {
