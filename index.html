@@ -162,6 +162,10 @@
         .disease-item {
             padding: 10px 15px; cursor: pointer; border-left: 3px solid transparent; 
             font-size: 0.9rem; color: var(--text-main); transition: background 0.2s;
+            white-space: normal; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+            line-height: 1.4;
         }
         .disease-item:hover { background: var(--bg-input); }
         .disease-item.active { background: var(--bg-input); border-left-color: var(--accent-color); font-weight: 600; }
@@ -326,6 +330,136 @@
         .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: var(--text-main); }
         .form-input { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; color: white; outline: none; margin-bottom: 10px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* --- UNIVERSAL SEARCH MODAL --- */
+        #searchModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(10px); z-index: 300; 
+            display: none; align-items: flex-start; justify-content: center; 
+            padding-top: 10vh;
+        }
+        #searchModal.visible { display: flex; }
+        
+        .search-modal-box {
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            width: 90%; 
+            max-width: 700px; 
+            max-height: 70vh; 
+            display: flex; 
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+        
+        .search-input-container {
+            padding: 20px; 
+            border-bottom: 1px solid var(--border-color);
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+        }
+        
+        .search-input-main {
+            flex: 1; 
+            background: var(--bg-input); 
+            border: none; 
+            padding: 12px 16px; 
+            font-size: 1rem; 
+            color: var(--text-main); 
+            border-radius: 8px; 
+            outline: none;
+        }
+        
+        .search-hint {
+            font-size: 0.75rem; 
+            color: var(--text-muted); 
+            padding: 8px 20px; 
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .search-results-container {
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 10px;
+        }
+        
+        .search-section {
+            margin-bottom: 20px;
+        }
+        
+        .search-section-title {
+            font-size: 0.7rem; 
+            font-weight: 800; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            padding: 8px 12px; 
+            background: var(--bg-box);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .search-result-card {
+            background: var(--bg-input); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 12px 16px; 
+            margin-bottom: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        
+        .search-result-card:hover, .search-result-card.selected {
+            background: var(--bg-box); 
+            border-color: var(--accent-color); 
+            transform: translateX(4px);
+        }
+        
+        .search-result-header {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 6px;
+        }
+        
+        .search-result-title {
+            font-weight: 600; 
+            font-size: 0.95rem; 
+            color: var(--text-main);
+        }
+        
+        .search-result-breadcrumb {
+            font-size: 0.7rem; 
+            color: var(--text-muted); 
+            display: flex; 
+            align-items: center; 
+            gap: 4px;
+        }
+        
+        .search-result-snippet {
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            line-height: 1.4; 
+            margin-top: 6px;
+        }
+        
+        .search-result-snippet mark {
+            background: rgba(59, 130, 246, 0.3); 
+            color: #60a5fa; 
+            padding: 2px 4px; 
+            border-radius: 3px; 
+            font-weight: 600;
+        }
+        
+        .search-empty {
+            text-align: center; 
+            padding: 40px; 
+            color: var(--text-muted); 
+            font-style: italic;
+        }    
+        
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
         .btn-primary { background: var(--accent-color); color: white; }
         .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
@@ -395,15 +529,22 @@
             /* Mobile Toggle: Fixed to left edge */
             .sidebar-toggle { left: -1px !important; transform: none; border-radius: 0 8px 8px 0; border-left: none; border-right: 1px solid var(--border-color); }
             /* When open, push to 80% */
-            .sidebar-toggle.mobile-open { left: 80% !important; border-radius: 8px 0 0 8px; border-right: none; border-left: 1px solid var(--border-color); margin-left: -1px; }
+            .sidebar-toggle.mobile-open { 
+                left: 80% !important; 
+                border-radius: 0 8px 8px 0; 
+                border-left: none; 
+                border-right: 1px solid var(--border-color); 
+                margin-right: -1px; 
+            }
             .sidebar-toggle div { transition: transform 0.3s; }
-            .sidebar-toggle.mobile-open div { transform: rotate(180deg); }
+            .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
         }
     </style>
 </head>
-<body oncontextmenu="return false;"> <div id="contextMenu"></div>
+<body oncontextmenu="return false;" style="opacity:0;transition:opacity 0.3s;"> 
+<div id="contextMenu"></div>
 
     <header>
         <div class="header-left">
@@ -413,7 +554,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.4.6</span>
+            <span class="version-badge">Alpha 0.5.0</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -535,6 +676,25 @@
         </div>
     </div>
 
+    <!-- Universal Search Modal -->
+    <div id="searchModal">
+        <div class="search-modal-box">
+            <div class="search-input-container">
+                <span style="font-size:1.2rem;color:var(--text-muted);">🔍</span>
+                <input type="text" id="searchInput" class="search-input-main" placeholder="Search diseases, categories, content..." autocomplete="off">
+                <span style="font-size:0.8rem;color:var(--text-muted);opacity:0.5;">ESC</span>
+            </div>
+            <div class="search-hint">
+                <span id="searchContext">Searching entire database</span> • 
+                Use <kbd style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-size:0.7rem;">↑↓</kbd> to navigate, 
+                <kbd style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-size:0.7rem;">Enter</kbd> to open
+            </div>
+            <div class="search-results-container" id="searchResults">
+                <div class="search-empty">Start typing to search...</div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -581,6 +741,10 @@
         // ADD THIS LINE BELOW:
         let tabsUnsubscribe = null;
 
+        let searchIndex = []; // Precomputed search data
+        let searchSelectedIndex = 0; // Keyboard navigation
+        let searchDebounceTimer = null;
+        
         const els = {
             homeView: document.getElementById('home-view'),
             appView: document.getElementById('app-view'),
@@ -610,8 +774,6 @@
             try {
                 if (auth.currentUser) {
                     await signOut(auth);
-                    // CRITICAL: Clear persistence to prevent auto-login after logout
-                    await setPersistence(auth, browserLocalPersistence);
                 } else {
                     provider.setCustomParameters({ prompt: 'select_account' });
                     await signInWithPopup(auth, provider);
@@ -661,6 +823,9 @@
             
             // FIX: Force UI update after auth check completes
             setTimeout(() => loadModules(), 100);
+
+            // Show UI after auth check completes
+            document.body.style.opacity = '1';
         });
 
         // --- HOME PAGE ---
@@ -668,6 +833,24 @@
             onSnapshot(query(collection(db, "app_modules"), orderBy("order")), (snap) => {
                 modules = [];
                 els.homeList.innerHTML = "";
+                
+                    // Enable drag & drop for admins
+                    if(isAdmin) {
+                        new Sortable(els.homeList, {
+                            animation: 150,
+                            delay: 800,
+                            delayOnTouchOnly: true,
+                            onEnd: async (evt) => {
+                                const items = els.homeList.querySelectorAll('.menu-item-home');
+                                const batch = writeBatch(db);
+                                items.forEach((el, index) => {
+                                    batch.update(doc(db, "app_modules", el.dataset.id), { order: index });
+                                });
+                                await batch.commit();
+                            }
+                        });
+                    }
+                
                 snap.forEach(doc => {
                     const data = {id: doc.id, ...doc.data()};
                     modules.push(data);
@@ -681,10 +864,15 @@
                         </div>
                         <div style="font-size:1.5rem">${data.icon || '📁'}</div>
                     `;
+                    el.dataset.id = data.id;
                     el.onclick = () => openModule(data.id);
                     setupContextTrigger(el, 'module', data);
                     els.homeList.appendChild(el);
                 });
+
+                // Rebuild search index when modules change
+                buildSearchIndex();
+                
             });
         }
 
@@ -710,6 +898,7 @@
                 snap.forEach(d => diseases.push({id: d.id, ...d.data()}));
                 diseases.sort((a,b) => (a.order || 999) - (b.order || 999));
                 renderSidebar();
+                buildSearchIndex();
             });
         }
 
@@ -749,11 +938,25 @@
                 
                 const header = document.createElement('div');
                 header.className = "category-header";
+                const categoryMeta = JSON.parse(localStorage.getItem('categoryMetadata') || '{}');
+                const catIcon = categoryMeta[cat]?.icon || '';
+                
                 header.innerHTML = `
-                    <span>${cat}</span>
+                    <span>${catIcon ? catIcon + ' ' : ''}${cat}</span>
                     <span class="category-chevron ${isCollapsed ? 'collapsed' : ''}">▼</span>
                 `;
                 header.onclick = () => toggleCategory(cat, header);
+
+                // Admin: Right-click to edit category
+                if(isAdmin) {
+                    header.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showContextMenu(e.clientX, e.clientY, [
+                            { label: 'Edit Category', action: () => openCategoryEditModal(cat) }
+                        ]);
+                    };
+                }
                 
                 catContainer.appendChild(header);
                 
@@ -1085,6 +1288,8 @@
             try {
                 const docRef = doc(db, "diseases", currentDiseaseId, "tabs", tab.id);
                 const docSnap = await getDoc(docRef);
+                // Reset scroll position
+                document.getElementById('contentArea').scrollTop = 0;
                 
                 // RACE CONDITION CHECK:
                 // If the user clicked another tab while this fetch was happening, ABORT.
@@ -1420,6 +1625,19 @@
             handleEditorKeydown(e);
         });
 
+        // Universal Search: Ctrl+K / Cmd+K
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                openUniversalSearch();
+            }
+            
+            // ESC to close search
+            if (e.key === 'Escape' && document.getElementById('searchModal').classList.contains('visible')) {
+                closeUniversalSearch();
+            }
+        });
+        
         // Sync Toolbar Active States
         document.addEventListener('selectionchange', () => {
             if (!isEditMode) return;
@@ -1567,10 +1785,392 @@
             els.modalSaveBtn.onclick = async () => { await onSave(); window.closeModal(); };
         };
 
+        window.openCategoryEditModal = async (oldCategoryName) => {
+            els.modal.style.display = 'flex';
+            els.modalTitle.innerText = 'Edit Category';
+            
+            // Get stored category metadata or create default
+            const categoryMeta = JSON.parse(localStorage.getItem('categoryMetadata') || '{}');
+            const currentIcon = categoryMeta[oldCategoryName]?.icon || '📁';
+            
+            els.modalForm.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Category Name</label>
+                    <input id="inpCatName" class="form-input" value="${oldCategoryName}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (Emoji)</label>
+                    <input id="inpCatIcon" class="form-input" value="${currentIcon}">
+                </div>
+            `;
+            
+            els.modalSaveBtn.onclick = async () => {
+                const newName = document.getElementById('inpCatName').value.trim();
+                const newIcon = document.getElementById('inpCatIcon').value.trim();
+                
+                if(!newName) { alert("Category name cannot be empty."); return; }
+                
+                // Save icon to localStorage
+                categoryMeta[newName] = { icon: newIcon };
+                localStorage.setItem('categoryMetadata', JSON.stringify(categoryMeta));
+                
+                // If name changed, update all diseases in this category
+                if(newName !== oldCategoryName) {
+                    const batch = writeBatch(db);
+                    const diseasesToUpdate = diseases.filter(d => d.category === oldCategoryName);
+                    
+                    diseasesToUpdate.forEach(d => {
+                        batch.update(doc(db, "diseases", d.id), { category: newName });
+                    });
+                    
+                    await batch.commit();
+                    
+                    // Update collapse states
+                    const collapseStates = JSON.parse(localStorage.getItem('categoryCollapseStates') || '{}');
+                    if(collapseStates[oldCategoryName] !== undefined) {
+                        collapseStates[newName] = collapseStates[oldCategoryName];
+                        delete collapseStates[oldCategoryName];
+                        localStorage.setItem('categoryCollapseStates', JSON.stringify(collapseStates));
+                    }
+                    
+                    // Update category order
+                    const categoryOrder = JSON.parse(localStorage.getItem('categoryOrder') || '[]');
+                    const index = categoryOrder.indexOf(oldCategoryName);
+                    if(index !== -1) {
+                        categoryOrder[index] = newName;
+                        localStorage.setItem('categoryOrder', JSON.stringify(categoryOrder));
+                    }
+                }
+                
+                window.closeModal();
+            };
+        };
+        
         window.closeModal = () => els.modal.style.display = 'none';
 
         async function deleteItem(col, id) { if(confirm("Permanently delete?")) await deleteDoc(doc(db, col, id)); }
 
+        async function buildSearchIndex() {
+            searchIndex = [];
+            
+            // Index all modules
+            modules.forEach(m => {
+                searchIndex.push({
+                    type: 'module',
+                    id: m.id,
+                    title: m.title,
+                    subtitle: m.subtitle || '',
+                    searchText: `${m.title} ${m.subtitle}`.toLowerCase(),
+                    breadcrumb: 'Module',
+                    icon: m.icon || '📁'
+                });
+            });
+            
+            // Index all diseases and their tabs
+            for (const disease of diseases) {
+                // Add disease itself
+                const moduleName = modules.find(m => m.id === disease.moduleId)?.title || 'Unknown';
+                
+                searchIndex.push({
+                    type: 'disease',
+                    id: disease.id,
+                    moduleId: disease.moduleId,
+                    title: disease.name,
+                    category: disease.category,
+                    searchText: `${disease.name} ${disease.category}`.toLowerCase(),
+                    breadcrumb: `${moduleName} → ${disease.category}`,
+                    snippet: ''
+                });
+                
+                // Fetch tabs for this disease
+                try {
+                    const tabsSnap = await getDocs(collection(db, "diseases", disease.id, "tabs"));
+                    tabsSnap.forEach(tabDoc => {
+                        const tabData = tabDoc.data();
+                        
+                        // Extract plain text from HTML content
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = tabData.content || '';
+                        const plainText = tempDiv.innerText || tempDiv.textContent || '';
+                        
+                        // Extract box titles and bodies separately
+                        const boxes = tempDiv.querySelectorAll('.clinical-box');
+                        boxes.forEach(box => {
+                            const boxTitle = box.querySelector('.box-header-title')?.innerText || '';
+                            const boxBody = box.querySelector('.box-body')?.innerText || '';
+                            const boxColor = box.classList.contains('box-green') ? 'green' :
+                                           box.classList.contains('box-blue') ? 'blue' :
+                                           box.classList.contains('box-red') ? 'red' : 'orange';
+                            
+                            searchIndex.push({
+                                type: 'content',
+                                diseaseId: disease.id,
+                                diseaseName: disease.name,
+                                moduleId: disease.moduleId,
+                                category: disease.category,
+                                tabId: tabDoc.id,
+                                tabTitle: tabData.title,
+                                boxTitle: boxTitle,
+                                boxColor: boxColor,
+                                content: boxBody,
+                                searchText: `${disease.name} ${disease.category} ${tabData.title} ${boxTitle} ${boxBody}`.toLowerCase(),
+                                breadcrumb: `${moduleName} → ${disease.category} → ${disease.name} → ${tabData.title}`,
+                                snippet: boxBody.substring(0, 200)
+                            });
+                        });
+                        
+                        // Also add tab-level entry if it has content outside boxes
+                        if (plainText.trim()) {
+                            searchIndex.push({
+                                type: 'tab',
+                                diseaseId: disease.id,
+                                diseaseName: disease.name,
+                                moduleId: disease.moduleId,
+                                category: disease.category,
+                                tabId: tabDoc.id,
+                                tabTitle: tabData.title,
+                                content: plainText,
+                                searchText: `${disease.name} ${disease.category} ${tabData.title} ${plainText}`.toLowerCase(),
+                                breadcrumb: `${moduleName} → ${disease.category} → ${disease.name} → ${tabData.title}`,
+                                snippet: plainText.substring(0, 200)
+                            });
+                        }
+                    });
+                } catch (err) {
+                    console.error(`Failed to index tabs for ${disease.name}:`, err);
+                }
+            }
+            
+            console.log(`Search index built: ${searchIndex.length} entries`);
+        }
+        
+        window.openUniversalSearch = () => {
+            const modal = document.getElementById('searchModal');
+            const input = document.getElementById('searchInput');
+            const contextText = document.getElementById('searchContext');
+            
+            // Update search context hint
+            if (currentDiseaseId) {
+                const diseaseName = diseases.find(d => d.id === currentDiseaseId)?.name || 'Current Disease';
+                contextText.innerText = `Searching in "${diseaseName}" + Other Diseases`;
+            } else if (currentModuleId) {
+                const moduleName = modules.find(m => m.id === currentModuleId)?.title || 'Current Section';
+                contextText.innerText = `Searching in "${moduleName}" + Other Sections`;
+            } else {
+                contextText.innerText = 'Searching entire database';
+            }
+            
+            modal.classList.add('visible');
+            input.value = '';
+            input.focus();
+            
+            // Show initial state
+            document.getElementById('searchResults').innerHTML = '<div class="search-empty">Start typing to search...</div>';
+            searchSelectedIndex = 0;
+        };
+        
+        window.closeUniversalSearch = () => {
+            document.getElementById('searchModal').classList.remove('visible');
+            document.getElementById('searchInput').value = '';
+        };
+
+        function executeSearch(query) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (!query || query.length < 2) {
+                resultsContainer.innerHTML = '<div class="search-empty">Type at least 2 characters...</div>';
+                return;
+            }
+            
+            const lowerQuery = query.toLowerCase();
+            
+            // Filter results
+            let matches = searchIndex.filter(item => item.searchText.includes(lowerQuery));
+            
+            if (matches.length === 0) {
+                resultsContainer.innerHTML = '<div class="search-empty">No results found</div>';
+                return;
+            }
+            
+            // Organize results by priority
+            const currentDiseaseResults = [];
+            const currentSectionResults = [];
+            const otherResults = [];
+            
+            matches.forEach(match => {
+                if (currentDiseaseId && match.diseaseId === currentDiseaseId) {
+                    currentDiseaseResults.push(match);
+                } else if (currentModuleId && match.moduleId === currentModuleId) {
+                    currentSectionResults.push(match);
+                } else {
+                    otherResults.push(match);
+                }
+            });
+            
+            // Render results
+            resultsContainer.innerHTML = '';
+            
+            // Helper function to create result card
+            const createResultCard = (item, index) => {
+                const card = document.createElement('div');
+                card.className = 'search-result-card';
+                card.dataset.index = index;
+                
+                // Highlight matching text in snippet
+                const snippet = item.snippet || item.subtitle || item.content?.substring(0, 200) || '';
+                const regex = new RegExp(`(${query})`, 'gi');
+                const highlightedSnippet = snippet.replace(regex, '<mark>$1</mark>');
+                
+                let titleDisplay = item.title || item.diseaseName || '';
+                if (item.boxTitle) titleDisplay += ` - ${item.boxTitle}`;
+                if (item.tabTitle && item.type === 'content') titleDisplay = item.tabTitle + (item.boxTitle ? ` → ${item.boxTitle}` : '');
+                
+                card.innerHTML = `
+                    <div class="search-result-header">
+                        <div class="search-result-title">${titleDisplay.replace(regex, '<mark>$1</mark>')}</div>
+                        ${item.boxColor ? `<span style="width:12px;height:12px;border-radius:50%;background:var(--${item.boxColor === 'green' ? '#10b981' : item.boxColor === 'blue' ? '#3b82f6' : item.boxColor === 'red' ? '#ef4444' : '#f59e0b'});"></span>` : ''}
+                    </div>
+                    <div class="search-result-breadcrumb">${item.breadcrumb}</div>
+                    ${snippet ? `<div class="search-result-snippet">${highlightedSnippet}...</div>` : ''}
+                `;
+                
+                card.onclick = () => navigateToResult(item);
+                
+                return card;
+            };
+            
+            let globalIndex = 0;
+            
+            // Render Current Disease Section
+            if (currentDiseaseResults.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'search-section';
+                section.innerHTML = '<div class="search-section-title">📍 In This Disease</div>';
+                currentDiseaseResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
+                resultsContainer.appendChild(section);
+            }
+            
+            // Render Current Section
+            if (currentSectionResults.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'search-section';
+                section.innerHTML = '<div class="search-section-title">📂 In This Section</div>';
+                currentSectionResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
+                resultsContainer.appendChild(section);
+            }
+            
+            // Render Other Results
+            if (otherResults.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'search-section';
+                section.innerHTML = '<div class="search-section-title">🌐 Other Results</div>';
+                otherResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
+                resultsContainer.appendChild(section);
+            }
+            
+            // Select first result
+            searchSelectedIndex = 0;
+            updateSearchSelection();
+        }
+
+        function updateSearchSelection() {
+            const cards = document.querySelectorAll('.search-result-card');
+            cards.forEach((card, i) => {
+                if (i === searchSelectedIndex) {
+                    card.classList.add('selected');
+                    card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+        }
+        
+        async function navigateToResult(item) {
+            closeUniversalSearch();
+            
+            if (item.type === 'module') {
+                openModule(item.id);
+                return;
+            }
+            
+            if (item.type === 'disease') {
+                if (currentModuleId !== item.moduleId) {
+                    openModule(item.moduleId);
+                    await new Promise(resolve => setTimeout(resolve, 300)); // Wait for module to load
+                }
+                const diseaseData = diseases.find(d => d.id === item.id);
+                if (diseaseData) selectDisease(diseaseData);
+                return;
+            }
+            
+            if (item.type === 'content' || item.type === 'tab') {
+                // Navigate to module → disease → tab
+                if (currentModuleId !== item.moduleId) {
+                    openModule(item.moduleId);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                
+                const diseaseData = diseases.find(d => d.id === item.diseaseId);
+                if (diseaseData) {
+                    selectDisease(diseaseData);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                
+                // Switch to the specific tab
+                const tabData = { id: item.tabId, title: item.tabTitle };
+                await switchTab(tabData);
+                
+                // Scroll to the box if it's a content match
+                if (item.boxTitle) {
+                    setTimeout(() => {
+                        const boxes = document.querySelectorAll('.clinical-box');
+                        for (let box of boxes) {
+                            const title = box.querySelector('.box-header-title')?.innerText;
+                            if (title === item.boxTitle) {
+                                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                box.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.6)';
+                                setTimeout(() => { box.style.boxShadow = ''; }, 2000);
+                                break;
+                            }
+                        }
+                    }, 400);
+                }
+            }
+        }
+        
+        // Keyboard navigation in search
+        document.getElementById('searchInput').addEventListener('keydown', (e) => {
+            const cards = document.querySelectorAll('.search-result-card');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                searchSelectedIndex = Math.min(searchSelectedIndex + 1, cards.length - 1);
+                updateSearchSelection();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                searchSelectedIndex = Math.max(searchSelectedIndex - 1, 0);
+                updateSearchSelection();
+            } else if (e.key === 'Enter' && cards.length > 0) {
+                e.preventDefault();
+                const selectedCard = cards[searchSelectedIndex];
+                if (selectedCard) selectedCard.click();
+            }
+        });
+        
+        // Real-time search with debounce
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                executeSearch(e.target.value);
+            }, 300);
+        });
+        
         async function handleReorder(evt) {
             els.ctxMenu.style.display = 'none';
             const parentGroup = evt.to.closest('.category-group');
