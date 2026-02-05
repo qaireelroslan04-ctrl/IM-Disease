@@ -619,7 +619,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.6.6</span>
+            <span class="version-badge">Alpha 0.6.5</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -1607,17 +1607,6 @@
             }
         };
 
-        function cleanGeminiJSON(text) {
-            // 1. Remove Markdown code blocks (```json ... ```)
-            let clean = text.replace(/```json|```/g, '').trim();
-            
-            // 2. Fix "unterminated fractional number" (e.g., "0." -> "0.0")
-            // This regex looks for a digit followed by a dot, then NOT a digit
-            clean = clean.replace(/(\d+)\.(?!\d)/g, '$1.0');
-            
-            return clean;
-        }
-        
         async function performDeepSearch(query) {
             const resultsContainer = document.getElementById('searchResults');
             resultsContainer.innerHTML = '<div class="search-empty" style="color:var(--accent-color)">✨ AI is analyzing database...</div>';
@@ -1645,8 +1634,8 @@
                         throw new Error(data.error.message);
                     }
 
-                    const rawText = data.candidates[0].content.parts[0].text;
-                    const jsonStr = cleanGeminiJSON(rawText); // Use the new sanitizer
+                    const text = data.candidates[0].content.parts[0].text;
+                    const jsonStr = text.replace(/```json|```/g, '').trim();
                     const result = JSON.parse(jsonStr);
 
                     if(result && result.bestMatchId) {
@@ -2319,7 +2308,7 @@
             document.getElementById('searchInput').value = '';
         };
 
-        function executeSearch(query, forceAI = false) {
+        function executeSearch(query) {
             const resultsContainer = document.getElementById('searchResults');
             
             if (!query || query.length < 2) {
@@ -2332,13 +2321,11 @@
 
             const ranked = getRankedSearchResults(lowerQuery);
 
-            // LOGIC CHANGE: Only trigger AI if forceAI is true (Enter key pressed)
             if (ranked.length === 0) {
-                if(forceAI && aiKey) {
+                if(aiKey) {
                     performDeepSearch(query);
                 } else {
-                    const msg = aiKey ? "Press <kbd>Enter</kbd> to Ask AI" : "<span onclick='setAIKey()' style='cursor:pointer;color:var(--accent-color)'>Set AI Key</span> to use Deep Search";
-                    resultsContainer.innerHTML = `<div class="search-empty">No local results.<br><br>${msg}</div>`;
+                    resultsContainer.innerHTML = '<div class="search-empty">No results found.<br><br><span style="color:var(--accent-color);cursor:pointer;text-decoration:underline;" onclick="setAIKey()">Set AI Key</span> to enable Deep Search.</div>';
                 }
                 return;
             }
@@ -2361,25 +2348,17 @@
             // Render results
             resultsContainer.innerHTML = '';
             
-            const currentDiseaseResults = [];
-            const currentSectionResults = [];
-            const otherResults = [];
-            
-            ranked.forEach(match => {
-                if (currentDiseaseId && match.diseaseId === currentDiseaseId) currentDiseaseResults.push(match);
-                else if (currentModuleId && match.moduleId === currentModuleId) currentSectionResults.push(match);
-                else otherResults.push(match);
-            });
-
-            resultsContainer.innerHTML = '';
-            
+            // Helper function to create result card
             const createResultCard = (item, index) => {
                 const card = document.createElement('div');
                 card.className = 'search-result-card';
                 card.dataset.index = index;
+                
+                // Highlight matching text in snippet
                 const snippet = getSnippetText(item, query);
-                const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                const regex = new RegExp(`(${query})`, 'gi');
                 const highlightedSnippet = snippet.replace(regex, '<mark>$1</mark>');
+                
                 let titleDisplay = item.title || item.diseaseName || '';
                 if (item.boxTitle) titleDisplay += ` - ${item.boxTitle}`;
                 if (item.tabTitle && item.type === 'content') titleDisplay = item.tabTitle + (item.boxTitle ? ` → ${item.boxTitle}` : '');
@@ -2392,33 +2371,48 @@
                     <div class="search-result-breadcrumb">${item.breadcrumb}</div>
                     ${snippet ? `<div class="search-result-snippet">${highlightedSnippet}...</div>` : ''}
                 `;
+                
                 card.onclick = () => navigateToResult(item);
+                
                 return card;
             };
-
+            
             let globalIndex = 0;
+            
+            // Render Current Disease Section
             if (currentDiseaseResults.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-section';
                 section.innerHTML = '<div class="search-section-title">📍 In This Disease</div>';
-                currentDiseaseResults.forEach(item => section.appendChild(createResultCard(item, globalIndex++)));
+                currentDiseaseResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
                 resultsContainer.appendChild(section);
             }
+            
+            // Render Current Section
             if (currentSectionResults.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-section';
                 section.innerHTML = '<div class="search-section-title">📂 In This Section</div>';
-                currentSectionResults.forEach(item => section.appendChild(createResultCard(item, globalIndex++)));
+                currentSectionResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
                 resultsContainer.appendChild(section);
             }
+            
+            // Render Other Results
             if (otherResults.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-section';
                 section.innerHTML = '<div class="search-section-title">🌐 Other Results</div>';
-                otherResults.forEach(item => section.appendChild(createResultCard(item, globalIndex++)));
+                otherResults.forEach(item => {
+                    section.appendChild(createResultCard(item, globalIndex++));
+                });
                 resultsContainer.appendChild(section);
             }
             
+            // Select first result
             searchSelectedIndex = 0;
             updateSearchSelection();
         }
@@ -2541,23 +2535,12 @@
             }
         });
         
-        // 1. Active Listener (Local Search ONLY on Typing)
+        // Real-time search with debounce
         document.getElementById('searchInput').addEventListener('input', (e) => {
             clearTimeout(searchDebounceTimer);
             searchDebounceTimer = setTimeout(() => {
-                // Pass 'false' to prevent AI from triggering while typing
-                executeSearch(e.target.value, false); 
+                executeSearch(e.target.value);
             }, 300);
-        });
-
-        // 2. Enter Key Listener (Triggers AI if needed)
-        document.getElementById('searchInput').addEventListener('keydown', (e) => {
-            // Note: Existing navigation listener (ArrowUp/Down) is separate and still works.
-            if (e.key === 'Enter') {
-                const val = e.target.value.trim();
-                // Pass 'true' to allow AI to trigger if local results are 0
-                if (val.length > 0) executeSearch(val, true); 
-            }
         });
 
         // Home universal search entry
