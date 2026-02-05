@@ -130,6 +130,50 @@
         .menu-label { font-weight: 700; font-size: 1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); }
 
+        /* Home Search Bar - Fixed Bottom (Samsung Style) */
+        .home-search-bar-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-body);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 20px 24px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .home-search-bar-fixed .home-search-input {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .home-search-bar-fixed .home-search-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .home-search-bar-fixed .fab-home {
+            position: static;
+            flex-shrink: 0;
+        }
+        
+        /* Adjust home view to prevent content being hidden behind fixed bar */
+        #home-view {
+            padding-bottom: 100px;
+        }
+        
         /* --- SIDEBAR --- */
         aside { 
             width: var(--sidebar-width); background: var(--bg-sidebar); 
@@ -454,12 +498,13 @@
         }
         
         .search-hit {
-            background: rgba(250, 204, 21, 0.35);
-            color: #facc15;
-            padding: 1px 3px;
-            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
             font-weight: 600;
-        }
+        }    
         
         .search-empty {
             text-align: center; 
@@ -471,43 +516,6 @@
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
         .btn-primary { background: var(--accent-color); color: white; }
         .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
-
-        /* Home – Universal Search */
-        .home-search-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            width: 100%;
-            max-width: 600px;
-        }
-
-        .home-search-container {
-            flex: 1;
-        }
-
-        .home-search-input {
-            width: 100%;
-            padding: 0.65rem 1rem;
-            border-radius: 999px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
-            color: var(--text-main);
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .home-search-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        /* FAB Home */
-        .fab-home {
-            position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
-            background: var(--accent-color); border-radius: 50%; color: white;
-            display: none; align-items: center; justify-content: center; font-size: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; z-index: 80;
-        }
 
         /* Toggle Button */
         .sidebar-toggle { 
@@ -575,6 +583,26 @@
             }
             .sidebar-toggle div { transition: transform 0.3s; }
             .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
+
+            /* Apple-Style Smooth Transitions */
+            main, .content-area, .tab-pill, .disease-item, .menu-item-home {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .search-result-card {
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            /* Smooth fade-in for content */
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .clinical-box {
+                animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
         }
@@ -591,7 +619,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.5.0</span>
+            <span class="version-badge">Alpha 0.5.6</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -616,18 +644,25 @@
     <div id="app-container">
         
         <div id="home-view">
-            <h2>Select Section</h2>
-            <div class="home-search-row">
-                <div class="home-search-container">
-                    <input 
-                        type="text" 
-                        id="homeUniversalSearch" 
-                        class="home-search-input" 
-                        placeholder="Search across all sections &amp; diseases...">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚕️</div>
+                    <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">IM Disease</h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Select a section to begin</p>
                 </div>
+                <div id="homeList" class="menu-list"></div>
+            </div>
+            
+            <!-- Fixed Bottom Search Bar -->
+            <div class="home-search-bar-fixed">
+                <input 
+                    type="text" 
+                    id="homeUniversalSearch" 
+                    class="home-search-input" 
+                    placeholder="Search across all sections & diseases..."
+                    autocomplete="off">
                 <div id="homeFab" class="fab-home">+</div>
             </div>
-            <div id="homeList" class="menu-list"></div>
         </div>
 
         <div id="app-view" style="display:none; width:100%; height:100%;">
@@ -635,7 +670,7 @@
             
             <aside id="sidebar">
                 <div class="sidebar-header">
-                    <input type="text" id="searchSidebar" class="search-input" placeholder="Search...">
+                    <input type="text" id="searchSidebar" class="search-input" placeholder="Search..." autocomplete="off">
                 </div>
                 <div id="sidebarContent" class="sidebar-content"></div>
             </aside>
@@ -870,7 +905,11 @@
             }
             
             // FIX: Force UI update after auth check completes
-            setTimeout(() => loadModules(), 100);
+            setTimeout(() => {
+                loadModules();
+                // Rebuild search index after auth resolves
+                setTimeout(() => buildSearchIndex(), 500);
+            }, 100);
 
             // Show UI after auth check completes
             document.body.style.opacity = '1';
@@ -1044,11 +1083,21 @@
             
             // Enable category dragging for admins
             if(isAdmin) {
-                new Sortable(els.sidebarContent, {
+                // Create a wrapper to isolate category sorting
+                const categoryWrapper = document.createElement('div');
+                categoryWrapper.style.display = 'contents';
+                
+                // Move all category groups into wrapper
+                const categoryGroups = els.sidebarContent.querySelectorAll('.category-group');
+                categoryGroups.forEach(group => categoryWrapper.appendChild(group));
+                els.sidebarContent.appendChild(categoryWrapper);
+                
+                new Sortable(categoryWrapper, {
                     animation: 150,
                     handle: '.category-header',
                     delay: 800,
                     delayOnTouchOnly: true,
+                    draggable: '.category-group',
                     onEnd: (evt) => handleCategoryReorder(evt)
                 });
             }
@@ -1103,11 +1152,20 @@
 
         // --- CORE UI ---
         window.goHome = () => {
+            // Reset state completely
             currentModuleId = null;
+            currentDiseaseId = null;
+            currentTabId = null;
+            
+            // UI Reset
             els.appView.style.display = 'none';
             els.homeView.style.display = 'flex';
             
-            // Fix C & D: Reset App State
+            // Clear search inputs
+            document.getElementById('homeUniversalSearch').value = '';
+            document.getElementById('searchSidebar').value = '';
+            
+            // Reset scroll state
             document.body.classList.remove('scrolled');
             document.getElementById('editToggleBtn').classList.remove('edit-btn-mobile-move');
             els.caseDetails.style.display = 'none';
@@ -1718,8 +1776,8 @@
 
         document.getElementById('editor').addEventListener('input', () => {
              if(currentDiseaseId) {
-                 clearTimeout(saveTimeout);
-                 saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 1000);
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => saveNoteContent(currentDiseaseId), 2500);
              }
         });
 
@@ -2101,11 +2159,16 @@
                 .map(entry => ({ ...entry.item, _score: entry.score }))
                 .sort((a, b) => b._score - a._score);
         }
-
         window.openUniversalSearch = (initialQuery = '') => {
             const modal = document.getElementById('searchModal');
             const input = document.getElementById('searchInput');
             const contextText = document.getElementById('searchContext');
+            const sidebarInput = document.getElementById('searchSidebar');
+            
+            // Clear sidebar search when coming from home
+            if (!currentModuleId) {
+                sidebarInput.value = '';
+            }
             
             // Update search context hint
             if (currentDiseaseId) {
@@ -2300,19 +2363,39 @@
                                 box.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.6)';
                                 setTimeout(() => { box.style.boxShadow = ''; }, 2000);
 
-                                // Highlight the matched text inside the box body
-                                const q = (lastSearchQuery || '').trim();
-                                if (q) {
-                                    const bodyEl = box.querySelector('.box-body') || box;
-                                    const safeQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                    const regex = new RegExp(`(${safeQuery})`, 'i');
-                                    // Remove previous highlights
-                                    bodyEl.innerHTML = bodyEl.innerHTML.replace(/<mark class="search-hit">|<\/mark>/g, '');
-                                    bodyEl.innerHTML = bodyEl.innerHTML.replace(regex, '<mark class="search-hit">$1</mark>');
-                                    setTimeout(() => {
-                                        bodyEl.innerHTML = bodyEl.innerHTML.replace(/<mark class="search-hit">|<\/mark>/g, '');
-                                    }, 2500);
-                                }
+                                    // Highlight the matched text inside the box body
+                                    const q = item.searchText ? 
+                                        Object.keys(item).find(k => item[k] && typeof item[k] === 'string' && item[k].toLowerCase().includes(lastSearchQuery.toLowerCase())) 
+                                        : lastSearchQuery;
+                                        
+                                    if (q && lastSearchQuery) {
+                                        setTimeout(() => {
+                                            const bodyEl = box.querySelector('.box-body') || box;
+                                            const safeQuery = lastSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                            const regex = new RegExp(`(${safeQuery})`, 'gi');
+                                            
+                                            // Apply subtle white glow highlight
+                                            const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT);
+                                            const textNodes = [];
+                                            while(walker.nextNode()) textNodes.push(walker.currentNode);
+                                            
+                                            textNodes.forEach(node => {
+                                                const text = node.textContent;
+                                                if (regex.test(text)) {
+                                                    const span = document.createElement('span');
+                                                    span.innerHTML = text.replace(regex, '<mark style="background:rgba(255,255,255,0.2);color:white;padding:2px 4px;border-radius:4px;box-shadow:0 0 8px rgba(255,255,255,0.4)">$1</mark>');
+                                                    node.replaceWith(span);
+                                                }
+                                            });
+                                            
+                                            // Remove highlight after 3 seconds
+                                            setTimeout(() => {
+                                                bodyEl.querySelectorAll('mark').forEach(m => {
+                                                    m.replaceWith(m.textContent);
+                                                });
+                                            }, 3000);
+                                        }, 600);
+                                    }
                                 break;
                             }
                         }
@@ -2391,6 +2474,47 @@
             }
         };
 
+        // --- BROWSER BACK NAVIGATION SUPPORT ---
+        let navigationStack = [];
+        
+        // Track navigation state
+        function pushNavigation(state) {
+            navigationStack.push(state);
+            history.pushState(state, '');
+        }
+        
+        // Handle browser back button
+        window.addEventListener('popstate', (event) => {
+            if (event.state) {
+                const state = event.state;
+                
+                if (state.view === 'home') {
+                    goHome();
+                } else if (state.view === 'module' && state.moduleId) {
+                    openModule(state.moduleId);
+                } else if (state.view === 'disease' && state.diseaseId) {
+                    const disease = diseases.find(d => d.id === state.diseaseId);
+                    if (disease) selectDisease(disease);
+                }
+            } else {
+                // No state = user went back to entry point
+                goHome();
+            }
+        });
+        
+        // Update existing navigation functions to track state
+        const originalOpenModule = window.openModule || openModule;
+        window.openModule = function(id) {
+            originalOpenModule(id);
+            pushNavigation({ view: 'module', moduleId: id });
+        };
+        
+        const originalSelectDisease = selectDisease;
+        selectDisease = function(data) {
+            originalSelectDisease(data);
+            pushNavigation({ view: 'disease', diseaseId: data.id, moduleId: currentModuleId });
+        };
+        
         // Handle Paste (Ctrl+V)
         document.getElementById('editor').addEventListener('paste', (e) => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -2526,7 +2650,7 @@
 
                 // 4. Construct Final Object
                 const exportObj = {
-                    version: "0.5.5",
+                    version: "0.5.6",
                     exportedAt: new Date().toISOString(),
                     user: auth.currentUser.email,
                     modules: modules,
