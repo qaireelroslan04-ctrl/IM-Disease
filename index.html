@@ -619,7 +619,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.6.0</span>
+            <span class="version-badge">Alpha 0.6.1</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -1591,6 +1591,7 @@
                 });
                 
                 const data = await response.json();
+                if(data.error) throw new Error(data.error.message); // <--- NEW LINE
                 const aiHtml = data.candidates[0].content.parts[0].text.replace(/```html|```/g, '');
                 
                 const loader = document.getElementById('ai-loading');
@@ -1620,6 +1621,7 @@
                 });
 
                 const data = await response.json();
+                if(data.error) throw new Error(data.error.message); // <--- NEW LINE
                 const text = data.candidates[0].content.parts[0].text;
                 const jsonStr = text.replace(/```json|```/g, '').trim();
                 const result = JSON.parse(jsonStr);
