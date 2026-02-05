@@ -453,6 +453,14 @@
             font-weight: 600;
         }
         
+        .search-hit {
+            background: rgba(250, 204, 21, 0.35);
+            color: #facc15;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
         .search-empty {
             text-align: center; 
             padding: 40px; 
@@ -463,6 +471,28 @@
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
         .btn-primary { background: var(--accent-color); color: white; }
         .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
+
+        /* Home – Universal Search */
+        .home-search-container {
+            margin-top: 1rem;
+            padding: 0.75rem 1.25rem 1.25rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .home-search-input {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .home-search-input::placeholder {
+            color: var(--text-muted);
+        }
 
         /* FAB Home */
         .fab-home {
@@ -581,6 +611,13 @@
         <div id="home-view">
             <h2>Select Section</h2>
             <div id="homeList" class="menu-list"></div>
+            <div class="home-search-container">
+                <input 
+                    type="text" 
+                    id="homeUniversalSearch" 
+                    class="home-search-input" 
+                    placeholder="Search across all sections &amp; diseases...">
+            </div>
             <div id="homeFab" class="fab-home">+</div>
         </div>
 
@@ -744,6 +781,7 @@
         let searchIndex = []; // Precomputed search data
         let searchSelectedIndex = 0; // Keyboard navigation
         let searchDebounceTimer = null;
+        let lastSearchQuery = '';
         
         const els = {
             homeView: document.getElementById('home-view'),
@@ -751,6 +789,7 @@
             sidebar: document.getElementById('sidebar'),
             sidebarContent: document.getElementById('sidebarContent'),
             homeList: document.getElementById('homeList'),
+            homeSearch: document.getElementById('homeUniversalSearch'),
             ctxMenu: document.getElementById('contextMenu'),
             modal: document.getElementById('universalModal'),
             modalTitle: document.getElementById('modalTitle'),
@@ -913,7 +952,10 @@
             const collapseStates = JSON.parse(localStorage.getItem('categoryCollapseStates') || '{}');
             
             // Sort categories by stored order if exists
-            const categoryOrder = JSON.parse(localStorage.getItem('categoryOrder') || '[]');
+            const moduleData = modules.find(m => m.id === currentModuleId) || {};
+            const remoteOrder = Array.isArray(moduleData.categoryOrder) ? moduleData.categoryOrder : [];
+            const localOrder = JSON.parse(localStorage.getItem('categoryOrder') || '[]');
+            const categoryOrder = remoteOrder.length ? remoteOrder : localOrder;
             categories = [...new Set(diseases.map(d => d.category))];
             
             if(categoryOrder.length > 0) {
@@ -1040,6 +1082,14 @@
             const categoryGroups = els.sidebarContent.querySelectorAll('.category-group');
             const newOrder = Array.from(categoryGroups).map(g => g.dataset.category);
             localStorage.setItem('categoryOrder', JSON.stringify(newOrder));
+
+            // Persist category order to the current module so it syncs across devices
+            if (currentModuleId) {
+                const modRef = doc(db, "app_modules", currentModuleId);
+                updateDoc(modRef, { categoryOrder: newOrder }).catch(err => {
+                    console.error('Failed to save category order to module:', err);
+                });
+            }
         }
 
         // --- CORE UI ---
@@ -1688,27 +1738,95 @@
         }
 
         // --- SEARCH ---
+        function executeSectionalSearch(query) {
+            const container = els.sidebarContent;
+            const trimmed = query.trim();
+            if (!trimmed || trimmed.length < 2) {
+                renderSidebar();
+                return;
+            }
+
+            const lowerQuery = trimmed.toLowerCase();
+            lastSearchQuery = trimmed;
+
+            const ranked = getRankedSearchResults(lowerQuery);
+            if (ranked.length === 0) {
+                container.innerHTML = '<div class="search-empty">No results found</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            const inCurrentDisease = [];
+            const inCurrentSection = [];
+            const others = [];
+
+            ranked.forEach(item => {
+                if (currentDiseaseId && item.diseaseId === currentDiseaseId) {
+                    inCurrentDisease.push(item);
+                } else if (currentModuleId && item.moduleId === currentModuleId) {
+                    inCurrentSection.push(item);
+                } else {
+                    others.push(item);
+                }
+            });
+
+            let globalIndex = 0;
+
+            const createSection = (title, items) => {
+                if (!items.length) return;
+                const section = document.createElement('div');
+                section.className = 'search-section';
+                section.innerHTML = `<div class="search-section-title">${title}</div>`;
+
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'search-result-card';
+                    card.dataset.index = globalIndex++;
+
+                    const snippet = getSnippetText(item, trimmed);
+                    const regex = new RegExp(`(${trimmed})`, 'gi');
+                    const highlightedSnippet = snippet.replace(regex, '<mark>$1</mark>');
+
+                    let titleDisplay = item.title || item.diseaseName || '';
+                    if (item.boxTitle) titleDisplay += ` – ${item.boxTitle}`;
+                    if (item.tabTitle && item.type === 'content') {
+                        titleDisplay = `${item.diseaseName || ''} – ${item.tabTitle}${item.boxTitle ? ' – ' + item.boxTitle : ''}`;
+                    }
+
+                    const breadcrumb = item.breadcrumb || '';
+
+                    card.innerHTML = `
+                        <div class="search-result-header">
+                            <div class="search-result-title">${titleDisplay.replace(regex, '<mark>$1</mark>')}</div>
+                        </div>
+                        <div class="search-result-breadcrumb">${breadcrumb}</div>
+                        ${snippet ? `<div class="search-result-snippet">${highlightedSnippet}</div>` : ''}
+                    `;
+
+                    card.onclick = () => navigateToResult(item);
+                    section.appendChild(card);
+                });
+
+                container.appendChild(section);
+            };
+
+            if (currentDiseaseId) {
+                createSection('📍 In This Disease', inCurrentDisease);
+            }
+            if (currentModuleId) {
+                createSection('📂 In This Section', inCurrentSection);
+            }
+            createSection('🌐 Other Sections', others);
+        }
+
         document.getElementById('searchSidebar').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const container = document.getElementById('sidebarContent');
-            if(query.length < 2) { renderSidebar(); return; }
-
-            const results = diseases.filter(d => {
-                const nameMatch = d.name.toLowerCase().includes(query);
-                const contentMatch = (d.searchIndex || "").includes(query); 
-                return nameMatch || contentMatch;
-            });
-
-            container.innerHTML = "";
-            results.forEach(d => {
-                const div = document.createElement("div");
-                div.className = "disease-item"; 
-                const regex = new RegExp(`(${query})`, 'gi');
-                const nameHtml = d.name.replace(regex, "<mark style='background:#3b82f6;color:white'>$1</mark>");
-                div.innerHTML = `<div style="font-size:0.8rem;opacity:0.7">${d.category}</div><div>${nameHtml}</div>`;
-                div.onclick = () => selectDisease(d);
-                container.appendChild(div);
-            });
+            const query = e.target.value;
+            if (!query || query.trim().length < 2) {
+                renderSidebar();
+                return;
+            }
+            executeSectionalSearch(query);
         });
 
         // --- CONTEXT MENUS & MODALS ---
@@ -1862,7 +1980,8 @@
                     subtitle: m.subtitle || '',
                     searchText: `${m.title} ${m.subtitle}`.toLowerCase(),
                     breadcrumb: 'Module',
-                    icon: m.icon || '📁'
+                    icon: m.icon || '📁',
+                    fullText: ''
                 });
             });
             
@@ -1913,6 +2032,7 @@
                                 boxTitle: boxTitle,
                                 boxColor: boxColor,
                                 content: boxBody,
+                                fullText: boxBody,
                                 searchText: `${disease.name} ${disease.category} ${tabData.title} ${boxTitle} ${boxBody}`.toLowerCase(),
                                 breadcrumb: `${moduleName} → ${disease.category} → ${disease.name} → ${tabData.title}`,
                                 snippet: boxBody.substring(0, 200)
@@ -1930,6 +2050,7 @@
                                 tabId: tabDoc.id,
                                 tabTitle: tabData.title,
                                 content: plainText,
+                                fullText: plainText,
                                 searchText: `${disease.name} ${disease.category} ${tabData.title} ${plainText}`.toLowerCase(),
                                 breadcrumb: `${moduleName} → ${disease.category} → ${disease.name} → ${tabData.title}`,
                                 snippet: plainText.substring(0, 200)
@@ -1944,7 +2065,112 @@
             console.log(`Search index built: ${searchIndex.length} entries`);
         }
         
-        window.openUniversalSearch = () => {
+        function getSearchKey(item) {
+            if (item.type === 'disease') {
+                return `d:${item.id || item.diseaseId}`;
+            }
+            if (item.type === 'tab') {
+                return `t:${item.diseaseId}:${item.tabId}`;
+            }
+            if (item.type === 'content') {
+                const boxKey = item.boxTitle ? item.boxTitle : 'content';
+                return `b:${item.diseaseId}:${item.tabId}:${boxKey}`;
+            }
+            if (item.type === 'module') {
+                return `m:${item.id}`;
+            }
+            return `x:${item.id || Math.random()}`;
+        }
+
+        function getSnippetText(item, query) {
+            const baseText = (item.fullText || item.content || item.snippet || item.subtitle || '').trim();
+            if (!baseText) return '';
+
+            const lowerBase = baseText.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            const idx = lowerBase.indexOf(lowerQuery);
+
+            const MAX_LEN = 180;
+            if (idx === -1) {
+                return baseText.length > MAX_LEN ? baseText.substring(0, MAX_LEN) + '...' : baseText;
+            }
+
+            const RADIUS = 80;
+            let start = Math.max(0, idx - RADIUS);
+            let end = Math.min(baseText.length, idx + lowerQuery.length + RADIUS);
+
+            let snippet = baseText.substring(start, end);
+            if (start > 0) snippet = '...' + snippet;
+            if (end < baseText.length) snippet = snippet + '...';
+            return snippet;
+        }
+
+        function getRankedSearchResults(lowerQuery) {
+            const bestByKey = new Map();
+
+            searchIndex.forEach(item => {
+                const text = (item.searchText || '').toLowerCase();
+                if (!text.includes(lowerQuery)) return;
+
+                let score = 0;
+
+                // Base weight by type
+                if (item.type === 'disease') score += 400;
+                else if (item.type === 'tab') score += 300;
+                else if (item.type === 'content' && item.boxTitle) score += 220;
+                else if (item.type === 'content') score += 180;
+                else if (item.type === 'module') score += 150;
+
+                const qLen = lowerQuery.length;
+
+                const diseaseName = (item.diseaseName || item.title || '').toLowerCase();
+                const tabTitle = (item.tabTitle || '').toLowerCase();
+                const boxTitle = (item.boxTitle || '').toLowerCase();
+                const content = (item.fullText || item.content || '').toLowerCase();
+
+                const diseaseIdx = diseaseName.indexOf(lowerQuery);
+                if (diseaseIdx !== -1) {
+                    score += 200;
+                    if (diseaseIdx === 0 && qLen >= 3) score += 40;
+                }
+
+                const tabIdx = tabTitle.indexOf(lowerQuery);
+                if (tabIdx !== -1) {
+                    score += 120;
+                    if (tabIdx === 0 && qLen >= 3) score += 25;
+                }
+
+                const boxIdx = boxTitle.indexOf(lowerQuery);
+                if (boxIdx !== -1) {
+                    score += 80;
+                    if (boxIdx === 0 && qLen >= 3) score += 20;
+                }
+
+                const contentIdx = content.indexOf(lowerQuery);
+                if (contentIdx !== -1) {
+                    score += 40;
+                }
+
+                // Context boosts
+                if (currentDiseaseId && item.diseaseId === currentDiseaseId) {
+                    score += 80;
+                } else if (currentModuleId && item.moduleId === currentModuleId) {
+                    score += 40;
+                }
+
+                const key = getSearchKey(item);
+                const existing = bestByKey.get(key);
+                if (!existing || score > existing.score) {
+                    bestByKey.set(key, { item, score });
+                }
+            });
+
+            return Array.from(bestByKey.values())
+                .map(entry => ({ ...entry.item, _score: entry.score }))
+                .sort((a, b) => b._score - a._score);
+        }
+
+        window.openUniversalSearch = (initialQuery = '') => {
             const modal = document.getElementById('searchModal');
             const input = document.getElementById('searchInput');
             const contextText = document.getElementById('searchContext');
@@ -1957,15 +2183,20 @@
                 const moduleName = modules.find(m => m.id === currentModuleId)?.title || 'Current Section';
                 contextText.innerText = `Searching in "${moduleName}" + Other Sections`;
             } else {
-                contextText.innerText = 'Searching entire database';
+                contextText.innerText = 'Universal search: all sections & diseases';
             }
             
             modal.classList.add('visible');
-            input.value = '';
+            input.value = initialQuery || '';
             input.focus();
             
-            // Show initial state
-            document.getElementById('searchResults').innerHTML = '<div class="search-empty">Start typing to search...</div>';
+            const resultsEl = document.getElementById('searchResults');
+            if (initialQuery && initialQuery.trim().length >= 2) {
+                executeSearch(initialQuery.trim());
+            } else {
+                // Show initial state
+                resultsEl.innerHTML = '<div class="search-empty">Start typing to search...</div>';
+            }
             searchSelectedIndex = 0;
         };
         
@@ -1983,11 +2214,11 @@
             }
             
             const lowerQuery = query.toLowerCase();
-            
-            // Filter results
-            let matches = searchIndex.filter(item => item.searchText.includes(lowerQuery));
-            
-            if (matches.length === 0) {
+            lastSearchQuery = query;
+
+            const ranked = getRankedSearchResults(lowerQuery);
+
+            if (ranked.length === 0) {
                 resultsContainer.innerHTML = '<div class="search-empty">No results found</div>';
                 return;
             }
@@ -1997,7 +2228,7 @@
             const currentSectionResults = [];
             const otherResults = [];
             
-            matches.forEach(match => {
+            ranked.forEach(match => {
                 if (currentDiseaseId && match.diseaseId === currentDiseaseId) {
                     currentDiseaseResults.push(match);
                 } else if (currentModuleId && match.moduleId === currentModuleId) {
@@ -2017,7 +2248,7 @@
                 card.dataset.index = index;
                 
                 // Highlight matching text in snippet
-                const snippet = item.snippet || item.subtitle || item.content?.substring(0, 200) || '';
+                const snippet = getSnippetText(item, query);
                 const regex = new RegExp(`(${query})`, 'gi');
                 const highlightedSnippet = snippet.replace(regex, '<mark>$1</mark>');
                 
@@ -2136,6 +2367,20 @@
                                 box.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 box.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.6)';
                                 setTimeout(() => { box.style.boxShadow = ''; }, 2000);
+
+                                // Highlight the matched text inside the box body
+                                const q = (lastSearchQuery || '').trim();
+                                if (q) {
+                                    const bodyEl = box.querySelector('.box-body') || box;
+                                    const safeQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                    const regex = new RegExp(`(${safeQuery})`, 'i');
+                                    // Remove previous highlights
+                                    bodyEl.innerHTML = bodyEl.innerHTML.replace(/<mark class="search-hit">|<\/mark>/g, '');
+                                    bodyEl.innerHTML = bodyEl.innerHTML.replace(regex, '<mark class="search-hit">$1</mark>');
+                                    setTimeout(() => {
+                                        bodyEl.innerHTML = bodyEl.innerHTML.replace(/<mark class="search-hit">|<\/mark>/g, '');
+                                    }, 2500);
+                                }
                                 break;
                             }
                         }
@@ -2170,6 +2415,20 @@
                 executeSearch(e.target.value);
             }, 300);
         });
+
+        // Home universal search entry
+        if (els.homeSearch) {
+            els.homeSearch.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const value = e.target.value.trim();
+                    if (value.length > 0) {
+                        openUniversalSearch(value);
+                    } else {
+                        openUniversalSearch();
+                    }
+                }
+            });
+        }
         
         async function handleReorder(evt) {
             els.ctxMenu.style.display = 'none';
@@ -2335,7 +2594,7 @@
 
                 // 4. Construct Final Object
                 const exportObj = {
-                    version: "0.2.12",
+                    version: "0.5.5",
                     exportedAt: new Date().toISOString(),
                     user: auth.currentUser.email,
                     modules: modules,
