@@ -619,7 +619,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.6.1</span>
+            <span class="version-badge">Alpha 0.6.2</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -1584,7 +1584,8 @@
             try {
                 const systemPrompt = "You are a medical documentation assistant. Output ONLY valid HTML. Do not use Markdown blocks (```). Use these classes: <div class='clinical-box box-green'> (or blue/red/orange) for sections. <div class='box-header'><span class='box-header-title'>TITLE</span></div><div class='box-body'>CONTENT</div>. Use <table> for lists.";
                 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiKey}`, {
+                // Change "gemini-1.5-flash" to "gemini-1.5-flash-latest"
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${aiKey}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\nTask: ${promptText}` }] }] })
@@ -1614,7 +1615,8 @@
                 const context = searchIndex.map(i => `ID:${i.id || i.tabId}|Type:${i.type}|Title:${i.title || i.diseaseName || i.tabTitle}|Content:${(i.fullText || i.searchText || "").substring(0, 300)}`).join('\n');
                 const prompt = `Database:\n${context}\n\nQuery: "${query}"\n\nTask: Find the single best match ID. Return JSON: { "bestMatchId": "ID", "reason": "Short reason" }. If no relevance, return null.`;
 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiKey}`, {
+                // Change "gemini-1.5-flash" to "gemini-1.5-flash-latest"
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${aiKey}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
