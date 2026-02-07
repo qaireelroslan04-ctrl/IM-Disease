@@ -67,15 +67,20 @@
 
         /* Move the Detail Header Up and Away */
         .details-header {
-            transition: all 0.3s ease;
-            opacity: 1; transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1; 
+            max-height: 200px; /* Allow enough height for 3 lines */
+            overflow: hidden;
             margin-bottom: 0;
         }
         body.scrolled .details-header {
-            /* Fix E: Reduce gap (pull it up higher) */
-            margin-top: -95px; 
+            max-height: 0;
             opacity: 0;
+            margin-top: 0;
+            padding-top: 0;
+            padding-bottom: 0;
             pointer-events: none;
+            border-bottom: none;
         }
         
         /* Move Edit Button Down to Tabs level */
@@ -130,43 +135,51 @@
         .menu-label { font-weight: 700; font-size: 1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* Home Search Bar - Fixed Bottom (Samsung Style) */
+        /* Home Search Bar - Floating Bottom (Apple/Samsung Style) */
         .home-search-bar-fixed {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-body);
-            border-top: 1px solid var(--border-color);
-            padding: 12px 20px 24px 20px;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(17, 17, 17, 0.85); /* Semi-transparent box */
+            border: 1px solid var(--border-color);
+            border-radius: 30px; /* Capsule shape */
+            padding: 8px 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             z-index: 50;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 600px; /* Limit width on PC */
+            margin: 0 auto; /* Center on PC */
         }
         
-        .home-search-bar-fixed .home-search-input {
-            flex: 1;
-            padding: 14px 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
-            color: var(--text-main);
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .home-search-bar-fixed .home-search-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
+        /* Floating Button for Admin */
         .home-search-bar-fixed .fab-home {
-            position: static;
-            flex-shrink: 0;
+             position: absolute;
+             right: -70px; /* Push outside the search capsule */
+             bottom: 0;
+             width: 56px; height: 56px;
+             border-radius: 50%;
+             background: var(--accent-color);
+             display: flex; align-items: center; justify-content: center;
+             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+             font-size: 24px; color: white; cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .home-search-bar-fixed { 
+                left: 15px; right: 15px; bottom: 15px; 
+            }
+            .home-search-bar-fixed .fab-home {
+                position: static; /* Inside capsule on mobile */
+                width: 40px; height: 40px; font-size: 20px; margin-left: auto;
+                right: auto; bottom: auto; background: transparent; color: var(--accent-color);
+                box-shadow: none; border-left: 1px solid var(--border-color); border-radius: 0;
+                padding-left: 10px;
+            }
         }
         
         /* Adjust home view to prevent content being hidden behind fixed bar */
@@ -576,13 +589,12 @@
             /* When open, push to 80% */
             .sidebar-toggle.mobile-open { 
                 left: 80% !important; 
-                border-radius: 0 8px 8px 0; 
-                border-left: none; 
-                border-right: 1px solid var(--border-color); 
-                margin-right: -1px; 
+                border-radius: 8px 0 0 8px; /* Flip radius */
+                border-left: 1px solid var(--border-color); 
+                border-right: none; 
             }
-            .sidebar-toggle div { transition: transform 0.3s; }
-            .sidebar-toggle.mobile-open div { transform: rotate(0deg); }
+            .sidebar-toggle div { transition: transform 0.3s; transform: rotate(0deg); } /* Default Right */
+            .sidebar-toggle.mobile-open div { transform: rotate(180deg); } /* Point Left when Open */
 
             /* Apple-Style Smooth Transitions */
             main, .content-area, .tab-pill, .disease-item, .menu-item-home {
@@ -619,7 +631,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.6.5</span>
+            <span class="version-badge">Alpha 0.7.0</span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div id="adminBadge" class="admin-badge">ADMIN</div>
@@ -917,8 +929,9 @@
         });
 
         // --- HOME PAGE ---
-        function loadModules() {
-            onSnapshot(query(collection(db, "app_modules"), orderBy("order")), (snap) => {
+        async function loadModules() {
+             // 1. Listen for modules (Real-time)
+             onSnapshot(query(collection(db, "app_modules"), orderBy("order")), (snap) => {
                 modules = [];
                 els.homeList.innerHTML = "";
                 
@@ -960,10 +973,50 @@
 
                 // Rebuild search index when modules change
                 buildSearchIndex();
-                
+                buildGlobalSearchIndex();
             });
         }
 
+        // NEW: Fetch EVERYTHING for Universal Search
+        async function buildGlobalSearchIndex() {
+            console.log("Building Global Search Index...");
+            searchIndex = [];
+            
+            try {
+                // A. Index Modules (Already loaded)
+                modules.forEach(m => {
+                    searchIndex.push({ type: 'module', id: m.id, title: m.title, searchText: (m.title + ' ' + (m.subtitle||'')).toLowerCase(), breadcrumb: 'Section' });
+                });
+
+                // B. Fetch All Diseases
+                const dSnap = await getDocs(collection(db, "diseases"));
+                const allDiseases = dSnap.docs.map(d => ({id:d.id, ...d.data()}));
+                
+                for(const d of allDiseases) {
+                    const modTitle = modules.find(m => m.id === d.moduleId)?.title || 'Unknown';
+                    // Index Disease
+                    searchIndex.push({
+                        type: 'disease', id: d.id, moduleId: d.moduleId, title: d.name, 
+                        searchText: (d.name + ' ' + d.category).toLowerCase(),
+                        breadcrumb: `${modTitle} → ${d.category}`
+                    });
+                    
+                    // Index Search Field (if exists)
+                    if(d.searchIndex) {
+                         searchIndex.push({
+                            type: 'content', diseaseId: d.id, moduleId: d.moduleId, 
+                            title: d.name, searchText: d.searchIndex.toLowerCase(),
+                            breadcrumb: `${modTitle} → ${d.name} (Content)`
+                        });
+                    }
+                }
+                updateIndexStats();
+                console.log(`Global Index Built: ${searchIndex.length} items`);
+            } catch(e) {
+                console.error("Global Index Failed:", e);
+            }
+        }
+        
         // --- SIDEBAR ---
         function openModule(id) {
             currentModuleId = id;
@@ -1157,6 +1210,19 @@
             currentModuleId = null;
             currentDiseaseId = null;
             currentTabId = null;
+            
+            // FORCE RESET SIDEBAR CATEGORIES
+            localStorage.removeItem('categoryCollapseStates');
+            
+            // Fix Sidebar Arrow Logic
+            const toggleBtn = document.getElementById('sidebarToggle');
+            if(toggleBtn) {
+                 toggleBtn.classList.remove('mobile-open'); // Reset mobile arrow
+                 toggleBtn.classList.remove('collapsed');   // Reset PC arrow
+            }
+            if(window.innerWidth > 768) {
+                els.sidebar.classList.remove('collapsed'); // Expand on PC home
+            }
             
             // UI Reset
             els.appView.style.display = 'none';
@@ -1889,15 +1955,28 @@
         });
 
         async function saveNoteContent(diseaseId) {
+            // CRITICAL GUARD: Stop if user switched disease
+            if(diseaseId !== currentDiseaseId) {
+                console.warn("Save Aborted: User switched disease.");
+                return;
+            }
             if(!currentTabId) return;
+            
             const content = document.getElementById('editor').innerHTML;
-            await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
-                content: content, lastUpdated: new Date() 
-            });
-            const plainText = document.getElementById('editor').innerText;
-            await updateDoc(doc(db, "diseases", diseaseId), {
-                searchIndex: plainText.substring(0, 1000).toLowerCase() 
-            });
+            
+            try {
+                await updateDoc(doc(db, "diseases", diseaseId, "tabs", currentTabId), { 
+                    content: content, lastUpdated: new Date() 
+                });
+                
+                // Update Parent Search Index (Debounced text only)
+                const plainText = document.getElementById('editor').innerText;
+                await updateDoc(doc(db, "diseases", diseaseId), {
+                    searchIndex: plainText.substring(0, 2000).toLowerCase() 
+                });
+            } catch(e) {
+                console.error("Save Failed", e);
+            }
         }
 
         function attachBoxListeners() {
@@ -2322,11 +2401,15 @@
             const ranked = getRankedSearchResults(lowerQuery);
 
             if (ranked.length === 0) {
-                if(aiKey) {
-                    performDeepSearch(query);
-                } else {
-                    resultsContainer.innerHTML = '<div class="search-empty">No results found.<br><br><span style="color:var(--accent-color);cursor:pointer;text-decoration:underline;" onclick="setAIKey()">Set AI Key</span> to enable Deep Search.</div>';
-                }
+                resultsContainer.innerHTML = `
+                    <div class="search-empty">
+                        <div style="margin-bottom:10px;">No local results found for "${query}"</div>
+                        <button onclick="performDeepSearch('${query.replace(/'/g, "\\'")}')" 
+                                style="background:var(--accent-color); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px; margin:0 auto;">
+                            ✨ Ask AI to Search
+                        </button>
+                    </div>
+                `;
                 return;
             }
             
