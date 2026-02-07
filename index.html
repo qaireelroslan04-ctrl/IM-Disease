@@ -125,61 +125,56 @@
             gap: 1.5rem; padding: 2rem; overflow-y: auto; 
         }
         .menu-list { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 600px; }
+        /* NEW: Backup Status Dot */
+        .backup-status {
+            width: 8px; height: 8px; border-radius: 50%; background: #333; 
+            margin-right: 10px; display: none; transition: background 0.3s;
+        }
         .menu-item-home { 
             display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.5rem; 
             background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; 
-            cursor: pointer; transition: transform 0.1s;
+            cursor: pointer; transition: transform 0.1s; gap: 20px; /* INCREASED GAP */
         }
         .menu-item-home:active { transform: scale(0.98); }
         .menu-text { display: flex; flex-direction: column; }
         .menu-label { font-weight: 700; font-size: 1rem; color: var(--text-main); }
         .menu-sub { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* Home Search Bar - Floating Bottom (Apple/Samsung Style) */
+        /* Home Search Bar Container (Invisible Wrapper) */
         .home-search-bar-fixed {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(17, 17, 17, 0.85); /* Semi-transparent box */
-            border: 1px solid var(--border-color);
-            border-radius: 30px; /* Capsule shape */
-            padding: 8px 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 50;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            max-width: 600px; /* Limit width on PC */
-            margin: 0 auto; /* Center on PC */
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            z-index: 50; max-width: 600px; margin: 0 auto;
+            pointer-events: none; /* Allow clicks through empty space */
         }
         
-        /* Floating Button for Admin */
-        .home-search-bar-fixed .fab-home {
-             position: absolute;
-             right: -70px; /* Push outside the search capsule */
-             bottom: 0;
-             width: 56px; height: 56px;
-             border-radius: 50%;
-             background: var(--accent-color);
-             display: flex; align-items: center; justify-content: center;
-             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-             font-size: 24px; color: white; cursor: pointer;
+        /* The Input Capsule */
+        .home-search-input {
+            flex: 1; pointer-events: auto;
+            background: rgba(17, 17, 17, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 12px 20px;
+            color: var(--text-main);
+            font-size: 1rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            outline: none; transition: all 0.2s;
         }
-
+        .home-search-input:focus { border-color: var(--accent-color); }
+        
+        /* The FAB (Distinct & Separate) */
+        .fab-home {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: var(--accent-color); color: white;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 24px; cursor: pointer; pointer-events: auto;
+            flex-shrink: 0; /* Prevent squishing */
+        }
+        
         @media (max-width: 768px) {
-            .home-search-bar-fixed { 
-                left: 15px; right: 15px; bottom: 15px; 
-            }
-            .home-search-bar-fixed .fab-home {
-                position: static; /* Inside capsule on mobile */
-                width: 40px; height: 40px; font-size: 20px; margin-left: auto;
-                right: auto; bottom: auto; background: transparent; color: var(--accent-color);
-                box-shadow: none; border-left: 1px solid var(--border-color); border-radius: 0;
-                padding-left: 10px;
-            }
+            .home-search-bar-fixed { left: 15px; right: 15px; bottom: 15px; }
         }
         
         /* Adjust home view to prevent content being hidden behind fixed bar */
@@ -585,13 +580,17 @@
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 80%; }
             aside.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
             /* Mobile Toggle: Fixed to left edge */
-            .sidebar-toggle { left: -1px !important; transform: none; border-radius: 0 8px 8px 0; border-left: none; border-right: 1px solid var(--border-color); }
+            .sidebar-toggle { 
+                left: 0 !important; transform: none; 
+                border-radius: 0 8px 8px 0; 
+                border: 1px solid var(--border-color); border-left: none; 
+            }
             /* When open, push to 80% */
             .sidebar-toggle.mobile-open { 
                 left: 80% !important; 
-                border-radius: 8px 0 0 8px; /* Flip radius */
-                border-left: 1px solid var(--border-color); 
-                border-right: none; 
+                transform: translateX(-100%); /* Pull back by its own width so it stays attached to the sidebar edge */
+                border-radius: 8px 0 0 8px; 
+                border: 1px solid var(--border-color); border-right: none; 
             }
             .sidebar-toggle div { transition: transform 0.3s; transform: rotate(0deg); } /* Default Right */
             .sidebar-toggle.mobile-open div { transform: rotate(180deg); } /* Point Left when Open */
@@ -631,16 +630,17 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.7.0</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <div id="adminBadge" class="admin-badge">ADMIN</div>
-            
+            <span class="version-badge">Alpha 0.8.0</span> </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
+                        
             <div style="position:relative;">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=U&background=171717&color=fff" class="user-avatar" onclick="toggleProfileMenu()">
                 
                 <div id="profileMenu" style="display:none; position:absolute; right:0; top:40px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; width:200px; box-shadow:0 4px 15px rgba(0,0,0,0.5); z-index:100; overflow:hidden;">
-                    <div onclick="setAIKey()" class="ctx-item">✨ Set AI Key</div>
+                    <div onclick="setAIKey()" class="ctx-item" id="aiKeyMenuLabel">
+                        ✨ Set AI Key
+                    </div>
                     <div id="indexStats" class="ctx-item" style="font-size:0.75rem; color:var(--text-muted); cursor:default; border-bottom:1px solid var(--border-color);">Index: Calculating...</div>
                     <div onclick="exportData()" class="ctx-item">Backup Data (JSON)</div>
                     <div onclick="triggerImport()" class="ctx-item">Import Data</div>
@@ -673,7 +673,7 @@
                     type="text" 
                     id="homeUniversalSearch" 
                     class="home-search-input" 
-                    placeholder="Search across all sections & diseases..."
+                    placeholder="Search diseases, sections..."
                     autocomplete="off">
                 <div id="homeFab" class="fab-home">+</div>
             </div>
@@ -829,10 +829,12 @@
         let isEditMode = false;
         let saveTimeout;
         let isCreatingTab = false;
-        let isAuthProcessing = false; // Fix: Prevent double-click/ghost-click
+        let isAuthProcessing = false; 
         let aiKey = localStorage.getItem('im_ai_key') || null;
-
-        // ADD THIS LINE BELOW:
+        
+        // EXPOSE SEARCH TO WINDOW (Fix "Ask AI to Search" button)
+        window.performDeepSearch = performDeepSearch; 
+        
         let tabsUnsubscribe = null;
 
         let searchIndex = []; // Precomputed search data
@@ -1078,7 +1080,8 @@
                 catContainer.className = "category-group";
                 catContainer.dataset.category = cat;
                 
-                const isCollapsed = collapseStates[cat] === true;
+                // Default to TRUE (Collapsed) if undefined. Only open if explicitly false.
+                const isCollapsed = collapseStates[cat] !== false;
                 
                 const header = document.createElement('div');
                 header.className = "category-header";
@@ -1736,11 +1739,9 @@
         async function performFullBackup() {
             if(!isAdmin) return; 
             
-            const toast = document.createElement('div');
-            toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(59,130,246,0.9); color:white; padding:8px 16px; border-radius:20px; font-size:0.8rem; z-index:1000; pointer-events:none;";
-            toast.innerText = "⏳ Running Auto-Backup...";
-            document.body.appendChild(toast);
-
+            const dot = document.getElementById('backupStatus');
+            if(dot) { dot.style.display = 'block'; dot.style.background = '#f59e0b'; } // Yellow (Working)
+        
             try {
                 // 1. Fetch Modules
                 const modSnap = await getDocs(collection(db, "app_modules"));
@@ -1765,15 +1766,12 @@
                 };
                 
                 localStorage.setItem('IM_AUTO_BACKUP', JSON.stringify(backupPayload));
-                
-                toast.innerText = "✅ Backup Secured (Local)";
-                setTimeout(() => toast.remove(), 2000);
+        
+                if(dot) { dot.style.background = '#10b981'; } // Green (Success)
                 
             } catch(e) {
                 console.error(e);
-                toast.innerText = "❌ Backup Failed";
-                toast.style.background = "rgba(239, 68, 68, 0.9)";
-                setTimeout(() => toast.remove(), 3000);
+                if(dot) { dot.style.background = '#ef4444'; } // Red (Fail)
             }
         }
 
@@ -2793,6 +2791,12 @@
         window.toggleProfileMenu = () => {
             const menu = document.getElementById('profileMenu');
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            
+            // Dynamic Text Update
+            const label = document.getElementById('aiKeyMenuLabel');
+            if(label) {
+                label.innerText = localStorage.getItem('im_ai_key') ? '✅ AI Key Saved' : '✨ Set AI Key';
+            }
         };
         // Close menu on outside click
         document.addEventListener('click', (e) => {
