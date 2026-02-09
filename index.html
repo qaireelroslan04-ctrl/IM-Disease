@@ -630,7 +630,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.8.0</span> </div>
+            <span class="version-badge">Alpha 0.8.1</span> </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
                         
@@ -774,8 +774,8 @@
         <div class="search-modal-box">
             <div class="search-input-container">
                 <span style="font-size:1.2rem;color:var(--text-muted);">🔍</span>
-                <input type="text" id="searchInput" class="search-input-main" placeholder="Search diseases, categories, content..." autocomplete="off">
-                <span style="font-size:0.8rem;color:var(--text-muted);opacity:0.5;">ESC</span>
+                <input type="text" id="searchInput" class="search-input-main" placeholder="Search..." autocomplete="off">
+                <button onclick="closeUniversalSearch()" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;padding:0 10px;cursor:pointer;">&times;</button>
             </div>
             <div class="search-hint">
                 <span id="searchContext">Searching entire database</span> • 
@@ -841,6 +841,8 @@
         let searchSelectedIndex = 0; // Keyboard navigation
         let searchDebounceTimer = null;
         let lastSearchQuery = '';
+
+        let pendingNavigationTabId = null; // Fix for search navigation
         
         const els = {
             homeView: document.getElementById('home-view'),
@@ -1356,7 +1358,17 @@
                     tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
                     renderTabs(tabs);
                     
-                    // If current tab was deleted, switch to the first available one
+                    // FIX: Check for pending navigation from search
+                    if (pendingNavigationTabId) {
+                        const target = tabs.find(t => t.id === pendingNavigationTabId);
+                        if (target) {
+                            switchTab(target);
+                            pendingNavigationTabId = null; // Reset
+                            return;
+                        }
+                    }
+
+                    // Default behavior: Switch to first tab if current is invalid
                     if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
                         switchTab(tabs[0]);
                     }
@@ -1953,6 +1965,9 @@
         });
 
         async function saveNoteContent(diseaseId) {
+            // CRITICAL GUARD: Only save if in Edit Mode
+            if (!isEditMode) return; 
+            
             // CRITICAL GUARD: Stop if user switched disease
             if(diseaseId !== currentDiseaseId) {
                 console.warn("Save Aborted: User switched disease.");
@@ -2156,6 +2171,9 @@
             
             // Index all diseases and their tabs
             for (const disease of diseases) {
+                // SKIP if name/category is missing or "Unknown"
+                if (!disease.name || disease.name === 'Unknown' || !disease.category || disease.category === 'Unknown') continue;
+                
                 // Add disease itself
                 const moduleName = modules.find(m => m.id === disease.moduleId)?.title || 'Unknown';
                 
@@ -2326,11 +2344,11 @@
                     score += 60;
                 }
 
-                // Context boosts for current disease / section
+                // Context boosts
                 if (currentDiseaseId && item.diseaseId === currentDiseaseId) {
-                    score += 120;
+                    score += 500; // Huge boost for current disease
                 } else if (currentModuleId && item.moduleId === currentModuleId) {
-                    score += 70;
+                    score += 200; // Moderate boost for current module
                 }
 
                 const key = getSearchKey(item);
@@ -2535,10 +2553,13 @@
                     await new Promise(resolve => setTimeout(resolve, 300));
                 }
                 
+                // Set the pending tab ID so loadTabs picks it up automatically
+                pendingNavigationTabId = item.tabId;
+
                 const diseaseData = diseases.find(d => d.id === item.diseaseId);
                 if (diseaseData) {
                     selectDisease(diseaseData);
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    // No need to wait or switchTab manually; loadTabs will handle it
                 }
                 
                 // Switch to the specific tab
