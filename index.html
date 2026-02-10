@@ -617,6 +617,30 @@
             .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
             .backdrop.open { display: block; }
         }
+
+        /* --- NEW: Apple-Style Focus & AI Highlights --- */
+        .apple-glow {
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 10;
+        }
+        .apple-glow::after {
+            content: ''; position: absolute; inset: -4px; border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
+            pointer-events: none; animation: pulseGlow 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0% { opacity: 0.6; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1.02); }
+            100% { opacity: 0.6; transform: scale(0.98); }
+        }
+        .ai-answer-box {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
+        
     </style>
 </head>
 <body oncontextmenu="return false;" style="opacity:0;transition:opacity 0.3s;"> 
@@ -630,7 +654,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.8.1</span> </div>
+            <span class="version-badge">Alpha 0.9.0</span> </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
                         
@@ -983,42 +1007,31 @@
 
         // NEW: Fetch EVERYTHING for Universal Search
         async function buildGlobalSearchIndex() {
-            console.log("Building Global Search Index...");
             searchIndex = [];
             
-            try {
-                // A. Index Modules (Already loaded)
-                modules.forEach(m => {
-                    searchIndex.push({ type: 'module', id: m.id, title: m.title, searchText: (m.title + ' ' + (m.subtitle||'')).toLowerCase(), breadcrumb: 'Section' });
-                });
+            // 1. Modules
+            modules.forEach(m => {
+                searchIndex.push({ type: 'module', id: m.id, title: m.title, searchText: (m.title + ' ' + (m.subtitle||'')).toLowerCase(), breadcrumb: 'Section' });
+            });
 
-                // B. Fetch All Diseases
-                const dSnap = await getDocs(collection(db, "diseases"));
-                const allDiseases = dSnap.docs.map(d => ({id:d.id, ...d.data()}));
+            // 2. Diseases & Content (using stored searchIndex field)
+            diseases.forEach(d => {
+                const modTitle = modules.find(m => m.id === d.moduleId)?.title || 'Unknown';
+                // Disease Name
+                searchIndex.push({ type: 'disease', id: d.id, moduleId: d.moduleId, title: d.name, category: d.category, searchText: (d.name + ' ' + d.category).toLowerCase(), breadcrumb: `${modTitle} → ${d.category}` });
                 
-                for(const d of allDiseases) {
-                    const modTitle = modules.find(m => m.id === d.moduleId)?.title || 'Unknown';
-                    // Index Disease
-                    searchIndex.push({
-                        type: 'disease', id: d.id, moduleId: d.moduleId, title: d.name, 
-                        searchText: (d.name + ' ' + d.category).toLowerCase(),
-                        breadcrumb: `${modTitle} → ${d.category}`
+                // Content (if available)
+                if(d.searchIndex) {
+                     // We push a generic content marker. Detailed box finding happens in performDeepSearch context logic
+                     searchIndex.push({ 
+                        type: 'content', diseaseId: d.id, moduleId: d.moduleId, 
+                        title: d.name, category: d.category,
+                        searchText: d.searchIndex.toLowerCase(), 
+                        breadcrumb: `${modTitle} → ${d.name} (Content)`
                     });
-                    
-                    // Index Search Field (if exists)
-                    if(d.searchIndex) {
-                         searchIndex.push({
-                            type: 'content', diseaseId: d.id, moduleId: d.moduleId, 
-                            title: d.name, searchText: d.searchIndex.toLowerCase(),
-                            breadcrumb: `${modTitle} → ${d.name} (Content)`
-                        });
-                    }
                 }
-                updateIndexStats();
-                console.log(`Global Index Built: ${searchIndex.length} items`);
-            } catch(e) {
-                console.error("Global Index Failed:", e);
-            }
+            });
+            updateIndexStats();
         }
         
         // --- SIDEBAR ---
@@ -1333,42 +1346,47 @@
         }
 
         // --- TAB LOGIC ---
-        // FIX: Clean up previous listeners to prevent "Double Click" and "Ghost Updates"
+        let lastTabsHash = ""; 
         async function loadTabs(diseaseId) {
-            // 1. Unsubscribe from the previous disease's tabs (if listening)
-            if (tabsUnsubscribe) {
-                tabsUnsubscribe();
-                tabsUnsubscribe = null;
-            }
+            if (tabsUnsubscribe) { tabsUnsubscribe(); tabsUnsubscribe = null; }
+            lastTabsHash = ""; 
+            if(els.tabsContainer) els.tabsContainer.scrollLeft = 0;
 
             const tabsRef = collection(db, "diseases", diseaseId, "tabs");
             const q = query(tabsRef, orderBy("order", "asc"));
             
-            // 2. Start new listener and save the unsubscribe function
             tabsUnsubscribe = onSnapshot(q, (snapshot) => {
-                const tabs = [];
-                snapshot.forEach(doc => tabs.push({id: doc.id, ...doc.data()}));
+                const tabs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 
-                // 3. LOGIC CHANGE: Allow 0 tabs (Don't auto-create "Notes")
+                // 1. DIFF CHECK: Title + ID + Order
+                const currentHash = JSON.stringify(tabs.map(t => ({id: t.id, title: t.title})));
+                
+                // If structure is same, just update content silently if needed, but don't rebuild tabs
+                // Exception: If current tab content changed in DB (external update), we might need to refresh editor
+                // For now, we strictly stop rebuilds to prevent jumping.
+                if(currentHash === lastTabsHash && currentTabId) {
+                     // Check if current tab content updated externally? (Optional complexity)
+                     return; 
+                }
+                lastTabsHash = currentHash;
+
                 if(tabs.length === 0) {
                     currentTabId = null;
-                    renderTabs([]); // Render just the + button
+                    renderTabs([]); 
                     document.getElementById('editor').innerHTML = '<div class="placeholder-text">Click <b>+</b> above to add a Tab</div>';
                 } else {
-                    tabs.sort((a,b) => (a.order || 0) - (b.order || 0));
                     renderTabs(tabs);
                     
-                    // FIX: Check for pending navigation from search
+                    // Handle Navigation
                     if (pendingNavigationTabId) {
                         const target = tabs.find(t => t.id === pendingNavigationTabId);
                         if (target) {
                             switchTab(target);
-                            pendingNavigationTabId = null; // Reset
+                            pendingNavigationTabId = null;
                             return;
                         }
                     }
-
-                    // Default behavior: Switch to first tab if current is invalid
+                    
                     if(!currentTabId || !tabs.find(t => t.id === currentTabId)) {
                         switchTab(tabs[0]);
                     }
@@ -1499,8 +1517,8 @@
                 document.getElementById('editor').innerHTML = content || 
                     '<div class="placeholder-text">Tap Edit <span style="font-style:normal">✎</span> then <b>+</b> to add a Clinical Box</div>';
                 
-                // Re-init editor state
-                attachBoxListeners();
+                // Re-init editor state and fix imported boxes
+                scanAndFixBoxes();
                 
                 // Reset scroll
                 document.getElementById('editor').scrollTop = 0;
@@ -1590,6 +1608,27 @@
             if(currentDiseaseId) saveNoteContent(currentDiseaseId);
         };
 
+        window.scanAndFixBoxes = () => {
+            document.querySelectorAll('.clinical-box').forEach(box => {
+                let header = box.querySelector('.box-header');
+                if(header && !header.querySelector('.box-delete-btn')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'box-delete-btn';
+                    btn.innerHTML = '&times;';
+                    // Apply delete logic
+                    btn.onclick = function() {
+                        if(confirm("Delete this entire box?")) {
+                            this.closest('.clinical-box').remove();
+                            if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+                        }
+                    };
+                    // Only show if in edit mode
+                    btn.style.display = isEditMode ? 'block' : 'none';
+                    header.appendChild(btn);
+                }
+            });
+        };
+
         window.fmt = (cmd, val) => {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -1656,33 +1695,50 @@
             if(!isEditMode) { alert("Enable Edit Mode first."); return; }
             if(!aiKey) { setAIKey(); if(!aiKey) return; }
             
-            const promptText = prompt("✨ AI Scribe: What should I write/format?");
+            const promptText = prompt("✨ AI Scribe: What should I write?");
             if(!promptText) return;
 
-            // Insert loader
-            document.execCommand('insertHTML', false, '<div id="ai-loading" style="padding:15px; color:#3b82f6; background:rgba(59,130,246,0.1); border-radius:8px; margin:10px 0;">✨ Generating...</div>');
+            // 1. Check Context
+            const selection = window.getSelection();
+            const anchor = selection.anchorNode;
+            const insideBox = anchor && (anchor.nodeType === 3 ? anchor.parentNode : anchor).closest('.box-body');
+            
+            // 2. Adjust System Prompt
+            let systemPrompt = "You are a medical assistant. Output ONLY valid HTML. No Markdown.";
+            if(insideBox) {
+                systemPrompt += " Just output the inner content (text, lists, tables). Do NOT wrap in div.clinical-box.";
+            } else {
+                systemPrompt += " Wrap content in <div class='clinical-box box-green'><div class='box-header'><span class='box-header-title'>Generated</span></div><div class='box-body'>...content...</div></div>.";
+            }
+            systemPrompt += " For tables, use standard <table><thead>...<tbody> tags.";
+
+            // Insert Loader
+            const loaderId = 'ai-loader-' + Date.now();
+            document.execCommand('insertHTML', false, `<div id="${loaderId}" style="color:#3b82f6;">✨ Generating...</div>`);
             
             try {
-                const systemPrompt = "You are a medical documentation assistant. Output ONLY valid HTML. Do not use Markdown blocks (```). Use these classes: <div class='clinical-box box-green'> (or blue/red/orange) for sections. <div class='box-header'><span class='box-header-title'>TITLE</span></div><div class='box-body'>CONTENT</div>. Use <table> for lists.";
-                
-                // Change "gemini-1.5-flash" to "gemini-2.5-flash-lite"
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${aiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiKey}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\nTask: ${promptText}` }] }] })
                 });
                 
                 const data = await response.json();
-                if(data.error) throw new Error(data.error.message); // <--- NEW LINE
-                const aiHtml = data.candidates[0].content.parts[0].text.replace(/```html|```/g, '');
+                if(data.error) throw new Error(data.error.message);
                 
-                const loader = document.getElementById('ai-loading');
+                // Clean Output
+                let aiHtml = data.candidates[0].content.parts[0].text;
+                aiHtml = aiHtml.replace(/```html|```/g, '').trim();
+                
+                // Remove Loader and Insert
+                const loader = document.getElementById(loaderId);
                 if(loader) loader.remove();
                 document.execCommand('insertHTML', false, aiHtml);
-                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
                 
+                if(currentDiseaseId) saveNoteContent(currentDiseaseId);
+                setTimeout(scanAndFixBoxes, 500); // Fix buttons on new boxes
+
             } catch(e) {
-                const loader = document.getElementById('ai-loading');
+                const loader = document.getElementById(loaderId);
                 if(loader) loader.remove();
                 alert("AI Error: " + e.message);
             }
@@ -1690,55 +1746,62 @@
 
         async function performDeepSearch(query) {
             const resultsContainer = document.getElementById('searchResults');
-            resultsContainer.innerHTML = '<div class="search-empty" style="color:var(--accent-color)">✨ AI is analyzing database...</div>';
+            const isQuestion = /^(what|how|why|when|treatment|diagnosis|diff|manage)/i.test(query) || query.includes('?');
             
-            const makeRequest = async (retryCount = 0) => {
-                try {
-                    const context = searchIndex.map(i => `ID:${i.id || i.tabId}|Type:${i.type}|Title:${i.title || i.diseaseName || i.tabTitle}|Content:${(i.fullText || i.searchText || "").substring(0, 300)}`).join('\n');
-                    const prompt = `Database:\n${context}\n\nQuery: "${query}"\n\nTask: Find the single best match ID. Return JSON: { "bestMatchId": "ID", "reason": "Short reason" }. If no relevance, return null.`;
+            resultsContainer.innerHTML = isQuestion 
+                ? '<div class="search-empty" style="color:var(--accent-color)">✨ AI is analyzing database to answer...</div>'
+                : '<div class="search-empty" style="color:var(--accent-color)">✨ AI is finding best matches...</div>';
+            
+            try {
+                // Context Construction (Efficient)
+                const context = searchIndex.slice(0, 150).map(i => `[${i.type.toUpperCase()}] ${i.title} (${i.category||''}): ${(i.searchText||'').substring(0, 100)}...`).join('\n');
+                
+                let prompt = "";
+                if(isQuestion) {
+                    prompt = `Context:\n${context}\n\nUser Question: "${query}"\n\nTask: Answer the question using the context. If uncertain, say so. Keep it medical and concise (<100 words).`;
+                } else {
+                    prompt = `Database:\n${context}\n\nQuery: "${query}"\n\nTask: Find the single best match ID. Return strict JSON: { "bestMatchId": "ID", "type": "disease/module", "reason": "reason" }.`;
+                }
 
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${aiKey}`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${aiKey}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+                if(data.error) throw new Error(data.error.message);
+                
+                let text = data.candidates[0].content.parts[0].text;
 
-                    const data = await response.json();
+                if(isQuestion) {
+                    // Display Answer
+                    resultsContainer.innerHTML = `<div class="ai-answer-box"><b>🤖 AI Answer:</b><br>${text.replace(/\*\*/g, '<b>').replace(/\*/g, '•')}</div>`;
+                    // Append standard results below
+                    executeSearch(query); 
+                } else {
+                    // Parse Navigation
+                    text = text.replace(/```json|```/g, '').trim(); // Fix JSON Bug
+                    const result = JSON.parse(text);
                     
-                    // HANDLE QUOTA ERROR
-                    if(data.error) {
-                        if(data.error.code === 429 && retryCount < 2) {
-                            resultsContainer.innerHTML = '<div class="search-empty" style="color:#f59e0b">⏳ Quota limit. Retrying in 5s...</div>';
-                            await new Promise(r => setTimeout(r, 5000));
-                            return makeRequest(retryCount + 1);
-                        }
-                        throw new Error(data.error.message);
-                    }
-
-                    const text = data.candidates[0].content.parts[0].text;
-                    const jsonStr = text.replace(/```json|```/g, '').trim();
-                    const result = JSON.parse(jsonStr);
-
                     if(result && result.bestMatchId) {
-                        const item = searchIndex.find(i => (i.id === result.bestMatchId || i.tabId === result.bestMatchId));
+                        const item = searchIndex.find(i => i.id === result.bestMatchId);
                         if(item) {
                             resultsContainer.innerHTML = '';
                             const card = document.createElement('div');
                             card.className = 'search-result-card';
                             card.style.border = '1px solid var(--accent-color)';
-                            card.innerHTML = `<div class="search-result-header"><div class="search-result-title">✨ AI Match: ${item.title || item.diseaseName}</div></div><div class="search-result-breadcrumb">${result.reason}</div>`;
+                            card.innerHTML = `<div class="search-result-header"><div class="search-result-title">✨ AI Match: ${item.title}</div></div><div class="search-result-breadcrumb">${result.reason}</div>`;
                             card.onclick = () => navigateToResult(item);
                             resultsContainer.appendChild(card);
-                        } else { resultsContainer.innerHTML = '<div class="search-empty">AI found a match but ID was invalid.</div>'; }
-                    } else { resultsContainer.innerHTML = '<div class="search-empty">No relevant results found in database.</div>'; }
-
-                } catch(e) { 
-                    console.error(e); 
-                    resultsContainer.innerHTML = `<div class="search-empty">AI Search Error: ${e.message}</div>`; 
+                        }
+                    } else {
+                         resultsContainer.innerHTML = '<div class="search-empty">No high-confidence AI match.</div>';
+                         executeSearch(query);
+                    }
                 }
-            };
-            
-            await makeRequest();
+            } catch(e) {
+                resultsContainer.innerHTML = `<div class="search-empty">Error: ${e.message}</div>`;
+            }
         }
         
         // --- AUTO-BACKUP SYSTEM (Alpha 0.2.3) ---
@@ -2531,89 +2594,51 @@
         async function navigateToResult(item) {
             closeUniversalSearch();
             
-            if (item.type === 'module') {
-                openModule(item.id);
-                return;
-            }
-            
-            if (item.type === 'disease') {
-                if (currentModuleId !== item.moduleId) {
-                    openModule(item.moduleId);
-                    await new Promise(resolve => setTimeout(resolve, 300)); // Wait for module to load
+            // Helper: Flash
+            const flash = (el) => {
+                if(el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('apple-glow');
+                    setTimeout(() => el.classList.remove('apple-glow'), 2000);
                 }
-                const diseaseData = diseases.find(d => d.id === item.id);
-                if (diseaseData) selectDisease(diseaseData);
-                return;
-            }
-            
-            if (item.type === 'content' || item.type === 'tab') {
-                // Navigate to module → disease → tab
-                if (currentModuleId !== item.moduleId) {
-                    openModule(item.moduleId);
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-                
-                // Set the pending tab ID so loadTabs picks it up automatically
-                pendingNavigationTabId = item.tabId;
+            };
 
-                const diseaseData = diseases.find(d => d.id === item.diseaseId);
-                if (diseaseData) {
-                    selectDisease(diseaseData);
-                    // No need to wait or switchTab manually; loadTabs will handle it
-                }
-                
-                // Switch to the specific tab
-                const tabData = { id: item.tabId, title: item.tabTitle };
-                await switchTab(tabData);
-                
-                // Scroll to the box if it's a content match
-                if (item.boxTitle) {
+            // 1. Module
+            if(item.type === 'module') { openModule(item.id); return; }
+
+            // 2. Ensure Module Open
+            if(currentModuleId !== item.moduleId) {
+                openModule(item.moduleId);
+                await new Promise(r => setTimeout(r, 500)); // Wait for sidebar
+            }
+
+            // 3. Expand Category & Scroll to Disease
+            if(item.type === 'disease' || item.type === 'content') {
+                const catGroup = document.querySelector(`.category-group[data-category="${item.category}"]`);
+                if(catGroup) {
+                    const list = catGroup.querySelector('.disease-list');
+                    const chev = catGroup.querySelector('.category-chevron');
+                    if(list) { list.classList.remove('collapsed'); list.style.maxHeight = 'none'; }
+                    if(chev) chev.classList.remove('collapsed');
+                    
                     setTimeout(() => {
-                        const boxes = document.querySelectorAll('.clinical-box');
-                        for (let box of boxes) {
-                            const title = box.querySelector('.box-header-title')?.innerText;
-                            if (title === item.boxTitle) {
-                                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                box.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.6)';
-                                setTimeout(() => { box.style.boxShadow = ''; }, 2000);
-
-                                    // Highlight the matched text inside the box body
-                                    const q = item.searchText ? 
-                                        Object.keys(item).find(k => item[k] && typeof item[k] === 'string' && item[k].toLowerCase().includes(lastSearchQuery.toLowerCase())) 
-                                        : lastSearchQuery;
-                                        
-                                    if (q && lastSearchQuery) {
-                                        setTimeout(() => {
-                                            const bodyEl = box.querySelector('.box-body') || box;
-                                            const safeQuery = lastSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                            const regex = new RegExp(`(${safeQuery})`, 'gi');
-                                            
-                                            // Apply subtle white glow highlight
-                                            const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT);
-                                            const textNodes = [];
-                                            while(walker.nextNode()) textNodes.push(walker.currentNode);
-                                            
-                                            textNodes.forEach(node => {
-                                                const text = node.textContent;
-                                                if (regex.test(text)) {
-                                                    const span = document.createElement('span');
-                                                    span.innerHTML = text.replace(regex, '<mark style="background:rgba(255,255,255,0.2);color:white;padding:2px 4px;border-radius:4px;box-shadow:0 0 8px rgba(255,255,255,0.4)">$1</mark>');
-                                                    node.replaceWith(span);
-                                                }
-                                            });
-                                            
-                                            // Remove highlight after 3 seconds
-                                            setTimeout(() => {
-                                                bodyEl.querySelectorAll('mark').forEach(m => {
-                                                    m.replaceWith(m.textContent);
-                                                });
-                                            }, 3000);
-                                        }, 600);
-                                    }
-                                break;
-                            }
+                        const dItem = catGroup.querySelector(`.disease-item[data-id="${item.type==='disease'?item.id:item.diseaseId}"]`);
+                        flash(dItem);
+                        
+                        // 4. Open Disease & Find Content
+                        if(item.type === 'content') {
+                            selectDisease(diseases.find(d => d.id === item.diseaseId));
+                            // Wait for Tabs, then try to find text
+                            setTimeout(() => {
+                                // Simple text find as fallback since we don't have exact Tab ID in this index
+                                if(window.find && item.searchText) {
+                                     window.find(item.searchText.substring(0, 20), false, false, true);
+                                }
+                            }, 1000);
+                        } else {
+                            selectDisease(diseases.find(d => d.id === item.id));
                         }
-                    }, 400);
+                    }, 300);
                 }
             }
         }
