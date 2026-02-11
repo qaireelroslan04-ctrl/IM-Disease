@@ -648,7 +648,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.8.5</span> </div>
+            <span class="version-badge">Alpha 0.8.6</span> </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
                         
@@ -1043,6 +1043,13 @@
                 if(statusEl) statusEl.innerText = "Database indexed. Ready.";
                 console.log(`Global Index Built: ${searchIndex.length} items`);
 
+                // --- ADD THIS BLOCK ---
+                const currentInput = document.getElementById('searchInput').value;
+                if(currentInput && currentInput.length >= 2) {
+                    executeSearch(currentInput);
+                }
+                // ----------------------
+                
             } catch(e) {
                 console.error("Global Index Failed:", e);
                 if(statusEl) statusEl.innerText = "Indexing failed. Retrying...";
@@ -1212,12 +1219,13 @@
             if(!query) return;
             
             const resultsContainer = document.getElementById('searchResults');
+            // Show loading state
             resultsContainer.innerHTML = '<div class="search-empty" style="color:#a855f7">🤖 Asking AI...</div>';
 
             if(!aiKey) { setAIKey(); if(!aiKey) return; }
 
             try {
-                // Use 2.5 Flash Lite
+                // 1. Call AI
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${aiKey}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: `You are a medical assistant. Answer this query concisely (max 50 words): "${query}"` }] }] })
@@ -1228,14 +1236,49 @@
                 
                 const answer = data.candidates[0].content.parts[0].text;
                 
+                // 2. Render AI Answer
                 resultsContainer.innerHTML = `
                     <div class="ai-answer-box" style="background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); padding: 15px; border-radius: 12px; margin-bottom: 20px; color: white;">
                         <div style="font-weight:bold; margin-bottom:5px;">🤖 AI Answer:</div>
                         <div style="line-height:1.5;">${answer}</div>
                     </div>
+                    <div id="localResultsAfterAI"></div>
                 `;
-                // Append local results below context
-                executeSearch(query);
+
+                // 3. Manually Append Local Results (Safe Method)
+                // We create a temporary container to hold standard search results
+                const localContainer = document.getElementById('localResultsAfterAI');
+                
+                // Re-run ranking logic manually to avoid wiping the container
+                const lowerQuery = query.toLowerCase();
+                const ranked = searchIndex.map(item => {
+                    let score = 0;
+                    const text = (item.searchText || '').toLowerCase();
+                    if(text === lowerQuery) score += 100;
+                    else if(text.startsWith(lowerQuery)) score += 50;
+                    else if(text.includes(lowerQuery)) score += 20;
+                    else return null; 
+                    if(currentDiseaseId && (item.id === currentDiseaseId || item.diseaseId === currentDiseaseId)) score += 500; 
+                    else if(currentModuleId && (item.id === currentModuleId || item.moduleId === currentModuleId)) score += 200;
+                    return { ...item, _score: score };
+                }).filter(i => i !== null).sort((a, b) => b._score - a._score);
+
+                if (ranked.length > 0) {
+                    // Reuse the rendering logic but target our sub-container
+                    // Group 1: Current Disease
+                    const currentDiseaseMatches = ranked.filter(i => i.diseaseId === currentDiseaseId || i.id === currentDiseaseId);
+                    if(currentDiseaseMatches.length > 0) renderSearchSection("📍 In This Disease", currentDiseaseMatches.slice(0, 5), localContainer, query);
+
+                    // Group 2: Current Section
+                    const sectionMatches = ranked.filter(i => !currentDiseaseMatches.includes(i) && (i.moduleId === currentModuleId || i.id === currentModuleId));
+                    if(sectionMatches.length > 0) renderSearchSection("📂 In This Section", sectionMatches.slice(0, 5), localContainer, query);
+
+                    // Group 3: Global
+                    const globalMatches = ranked.filter(i => !currentDiseaseMatches.includes(i) && !sectionMatches.includes(i));
+                    if(globalMatches.length > 0) renderSearchSection("🌍 Global Results", globalMatches.slice(0, 10), localContainer, query);
+                } else {
+                    localContainer.innerHTML = '<div class="search-empty" style="padding:10px;">No local database matches found.</div>';
+                }
 
             } catch(e) {
                 resultsContainer.innerHTML = `<div class="search-empty">AI Error: ${e.message}</div>`;
