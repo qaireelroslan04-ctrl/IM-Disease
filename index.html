@@ -648,7 +648,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.8.7</span> </div>
+            <span class="version-badge">Alpha 0.8.7.1</span> </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
                         
@@ -1189,11 +1189,13 @@
                 const snippetDisplay = snippet.replace(regex, '<mark>$1</mark>');
 
                 card.innerHTML = `
-                    <div class="search-result-header">
-                        <div class="search-result-title">${titleDisplay}</div>
-                    </div>
-                
-                card.onclick = () => navigateToResult(item);
+                <div class="search-result-header">
+                    <div class="search-result-title">${titleDisplay}</div>
+                </div>
+                <div class="search-result-snippet">${snippetDisplay}</div>
+            `;
+
+            card.onclick = () => navigateToResult(item);
                 section.appendChild(card);
             });
             container.appendChild(section);
