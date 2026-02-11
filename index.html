@@ -648,7 +648,7 @@
                 <span id="headerDName"></span>
                 <span id="headerDiseaseCat"></span>
             </div>
-            <span class="version-badge">Alpha 0.8.6</span> </div>
+            <span class="version-badge">Alpha 0.8.7</span> </div>
             <div style="display:flex; align-items:center; gap:10px;">
                 <div id="backupStatus" class="backup-status" title="Backup Status"></div> <div id="adminBadge" class="admin-badge">ADMIN</div>
                         
@@ -754,7 +754,7 @@
                         <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="handleImageUpload(this)">        
                         <button class="fmt-btn" onclick="insertVideo()" title="YouTube">▶</button>
                         <button class="fmt-btn" onclick="insertTable()" title="Insert Table">▦</button>
-                        <button class="fmt-btn" onclick="cleanLaTeX()" title="Clean LaTeX">✨</button>
+                        <button class="fmt-btn" onclick="cleanLaTeX()" title="Clean LaTeX">LTX</button>
                     </div>
 
                     <div class="content-area" id="contentArea">
@@ -940,10 +940,10 @@
             
             // FIX: Force UI update after auth check completes
             setTimeout(() => {
-                loadModules();
-                // Rebuild search index after auth resolves
-                setTimeout(() => buildSearchIndex(), 500);
-            }, 100);
+            loadModules();
+            // Start Deep Indexing immediately so search is ready when user clicks
+            buildGlobalSearchIndex(); 
+        }, 100);
 
             // Show UI after auth check completes
             document.body.style.opacity = '1';
@@ -998,64 +998,96 @@
             });
         }
 
-        // --- 0.8.5 SEARCH ENGINE (Context-Aware) ---
+        // --- 0.8.7 SEARCH ENGINE (Deep Indexing) ---
+        
+        /* TERMINOLOGY MAPPING (User Guide):
+           - "Section" (Home Screen) = Code: "app_modules" / "currentModuleId"
+           - "Category" (Sidebar Header) = Code: "disease.category" (e.g. Cardiology)
+           - "Disease" (Sidebar Item) = Code: "diseases" (e.g. Heart Failure)
+           - "Tab" (Top Pills) = Code: "tabs" sub-collection (e.g. Definition, Treatment)
+           - "Box" (Content) = Code: "clinical-box" HTML classes
+        */
 
-        // 1. Comprehensive Indexing
         async function buildGlobalSearchIndex() {
             const statusEl = document.getElementById('searchContext');
-            if(statusEl) statusEl.innerText = "Indexing entire database...";
+            if(statusEl) statusEl.innerText = "Deep indexing entire database...";
             
             searchIndex = [];
             
             try {
-                // A. Index Modules
+                // 1. Index Sections (Modules)
                 modules.forEach(m => {
-                    searchIndex.push({ type: 'module', id: m.id, title: m.title, searchText: (m.title + ' ' + (m.subtitle||'')).toLowerCase(), breadcrumb: 'Section' });
+                    searchIndex.push({ 
+                        type: 'module', id: m.id, title: m.title, 
+                        searchText: (m.title + ' ' + (m.subtitle||'')).toLowerCase(), 
+                        breadcrumb: 'Section' 
+                    });
                 });
 
-                // B. Fetch All Diseases (Global)
+                // 2. Fetch All Diseases
                 const dSnap = await getDocs(collection(db, "diseases"));
                 const allDiseases = dSnap.docs.map(d => ({id:d.id, ...d.data()}));
                 
-                // Parallel Processing
-                const tabPromises = allDiseases.map(async (d) => {
+                // 3. Deep Fetch: Read TABS for every disease
+                // This ensures we catch "Definition", "Test", and all box content.
+                const diseasePromises = allDiseases.map(async (d) => {
                     const modTitle = modules.find(m => m.id === d.moduleId)?.title || 'Unknown';
                     
-                    // Index Disease Title
+                    // A. Index the Disease Itself
                     searchIndex.push({
                         type: 'disease', id: d.id, moduleId: d.moduleId, title: d.name, category: d.category,
                         searchText: (d.name + ' ' + d.category).toLowerCase(),
                         breadcrumb: `${modTitle} → ${d.category}`
                     });
 
-                    // Index Content (Using searchIndex field for speed)
-                    if(d.searchIndex) {
-                         searchIndex.push({
-                            type: 'content', diseaseId: d.id, moduleId: d.moduleId, category: d.category,
-                            title: d.name, searchText: d.searchIndex.toLowerCase(),
-                            breadcrumb: `${modTitle} → ${d.category} → ${d.name}`
+                    // B. Fetch Tabs Sub-collection
+                    const tabsRef = collection(db, "diseases", d.id, "tabs");
+                    const tabsSnap = await getDocs(tabsRef);
+                    
+                    tabsSnap.forEach(tDoc => {
+                        const t = tDoc.data();
+                        const tabTitle = t.title || "Note";
+                        const content = t.content || "";
+                        
+                        // Strip HTML for pure text search
+                        const tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = content;
+                        const plainText = tempDiv.innerText.replace(/\s+/g, ' ').trim();
+
+                        // C. Index the Tab (e.g., "Definition", "Management")
+                        searchIndex.push({
+                            type: 'content', 
+                            diseaseId: d.id, 
+                            moduleId: d.moduleId, 
+                            category: d.category,
+                            tabId: tDoc.id,
+                            title: d.name, // Main Title is Disease
+                            tabTitle: tabTitle, // Sub-title is Tab
+                            searchText: `${d.name} ${d.category} ${tabTitle} ${plainText}`.toLowerCase(),
+                            snippet: plainText.substring(0, 150),
+                            breadcrumb: `${modTitle} → ${d.category} → ${d.name} → ${tabTitle}`
                         });
-                    }
+                    });
                 });
 
-                await Promise.all(tabPromises);
+                await Promise.all(diseasePromises);
+                
                 updateIndexStats();
-                if(statusEl) statusEl.innerText = "Database indexed. Ready.";
-                console.log(`Global Index Built: ${searchIndex.length} items`);
+                if(statusEl) statusEl.innerText = "Deep Index Ready.";
+                console.log(`Deep Index Built: ${searchIndex.length} items`);
 
-                // --- ADD THIS BLOCK ---
+                // Auto-refresh results if user is already typing
                 const currentInput = document.getElementById('searchInput').value;
                 if(currentInput && currentInput.length >= 2) {
                     executeSearch(currentInput);
                 }
-                // ----------------------
-                
+
             } catch(e) {
                 console.error("Global Index Failed:", e);
                 if(statusEl) statusEl.innerText = "Indexing failed. Retrying...";
             }
         }
-
+        
         // 2. Open Search
         window.openUniversalSearch = (initialQuery = '') => {
             const modal = document.getElementById('searchModal');
@@ -1148,16 +1180,19 @@
                     snippet = "..." + snippet.substring(start, start + 100) + "...";
                 }
                 const regex = new RegExp(`(${query})`, 'gi');
-                const titleDisplay = item.title.replace(regex, '<mark>$1</mark>');
+
+                // NEW: Better Title Formatting
+                let rawTitle = item.title;
+                if(item.tabTitle) rawTitle += ` <span style="opacity:0.6; font-weight:normal;">➜ ${item.tabTitle}</span>`;
+                
+                const titleDisplay = rawTitle.replace(regex, '<mark>$1</mark>');
                 const snippetDisplay = snippet.replace(regex, '<mark>$1</mark>');
 
                 card.innerHTML = `
                     <div class="search-result-header">
                         <div class="search-result-title">${titleDisplay}</div>
                     </div>
-                    <div class="search-result-breadcrumb">${item.breadcrumb}</div>
-                    <div class="search-result-snippet">${snippetDisplay}</div>
-                `;
+                
                 card.onclick = () => navigateToResult(item);
                 section.appendChild(card);
             });
